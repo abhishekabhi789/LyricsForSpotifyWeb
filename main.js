@@ -23,6 +23,13 @@ const CLASSNAME_INACTIVE_LYRICS = 'inactive-lyrics';
 /** This attribute holds timestamp in mm:ss format for each div. */
 const ATTR_TIMESTAMP = 'timestamp';
 
+const manifestData = chrome.runtime.getManifest();
+const headers = new Headers({
+    "Accept"       : "application/json",
+    "Content-Type" : "application/json",
+    "User-Agent"   : `${manifestData.short_name} ${manifestData.version_name} (${manifestData.homepage_url})`
+});
+
 /** Converts playback time to seconds */
 function parseTimestamp(timestamp) {
     const [minutes, seconds] = timestamp.split(':').map(Number);
@@ -228,7 +235,7 @@ async function fetchAndShowLyrics(title, artist) {
     try {
         if (DEBUG) console.log('searching for lyrics');
         const url = `https://lrclib.net/api/search?track_name=${title}&artist_name=${artist}`;
-        const response = await fetch(url);
+        const response = await fetch(url, headers);
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
