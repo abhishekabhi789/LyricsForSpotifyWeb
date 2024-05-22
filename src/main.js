@@ -14,32 +14,17 @@ const SF_CLASSNAME_LYRICS_CONTAINER = 'FUYNhisXTCmbzt9IDxnT';
 
 // EXTENSION CONSTANTS
 /** Class name of the custom lyrics div. */
-const CLASSNAME_LYRICS_CONTAINER = 'lyrics_container'
+const CLASSNAME_LYRICS_CONTAINER = 'lyrics_container';
 /** Class name of the custom lyrics line div */
-const CLASSNAME_LYRICS_ADDED = 'added-lyrics'
+const CLASSNAME_LYRICS_ADDED = 'added-lyrics';
 const CLASSNAME_LYRICS_PASSED = 'passed-lyrics';
 const CLASSNAME_ACTIVE_LYRICS = 'active-lyrics';
 const CLASSNAME_INACTIVE_LYRICS = 'inactive-lyrics';
+const CLASSNAME_INFOLINE = 'info-line-container';
 /** This attribute holds timestamp in mm:ss format for each div. */
 const ATTR_TIMESTAMP = 'timestamp';
+const lyricsManager = new LyricsManager();
 
-const manifestData = chrome.runtime.getManifest();
-const headers = new Headers({
-    "Accept"       : "application/json",
-    "Content-Type" : "application/json",
-    "User-Agent"   : `${manifestData.short_name} ${manifestData.version_name} (${manifestData.homepage_url})`
-});
-
-/** Converts playback time to seconds */
-function parseTimestamp(timestamp) {
-    const [minutes, seconds] = timestamp.split(':').map(Number);
-    return minutes * 60 + seconds;
-}
-
-/** Selects UI elements with it's [CSS_ID] */
-function selectById(id) {
-    return document.querySelector(`[${CSS_ID}="${id}"]`);
-}
 
 /** Observes the now playing widget for track change. */
 const widgetObserver = new MutationObserver((mutations) => {
@@ -102,10 +87,6 @@ function updateLyricsClassNames(playbackTime) {
     //update progress only if its synced lyrics.
     if (lyrics[0].hasAttribute(ATTR_TIMESTAMP)) {
         const lyricsArray = Array.from(lyrics);
-        function parseTimestamp(playbackTime) {
-            const [minutes, seconds] = playbackTime.split(':').map(Number);
-            return minutes * 60 + seconds;
-        }
         // finding the lyrics for the current timestamp
         const playbackTimeSeconds = parseTimestamp(playbackTime);
         const currentLyrics = lyricsArray.reduce(function (prev, curr) {
@@ -149,35 +130,6 @@ function changePlayBackPosition(timeStamp) {
     progressBar.dispatchEvent(clickEvent);
 }
 
-/** makes lyrics div for lrc text. */
-function lrcToDivs(lrcContent) {
-    const lines = lrcContent.trim().split('\n');
-    const lyricDiv = document.createElement('div');
-    lyricDiv.className = CLASSNAME_LYRICS_CONTAINER;
-    lines.forEach(line => {
-        let matches = line.match(/\[(\d+:\d+\.\d+)\](.*)/);
-        let lineDiv = document.createElement('div');
-        lineDiv.classList.add(CLASSNAME_LYRICS_ADDED);
-        if (matches && matches.length === 3) {
-            // handling lrc lyrics
-            let timestamp = matches[1].split(".")[0];
-            let lyrics = matches[2].trim();
-            lineDiv.classList.add(CLASSNAME_INACTIVE_LYRICS);
-            lineDiv.setAttribute(ATTR_TIMESTAMP, timestamp);
-            lineDiv.innerHTML = (lyrics == "") ? "♪" : lyrics;
-            (function (ts) {
-                lineDiv.onclick = () => changePlayBackPosition(ts);
-            })(timestamp);
-        } else {
-            // process plain lyrics
-            lineDiv.classList.add(ATTR_BUTTON_LYRICS_ACTIVE);
-            lineDiv.innerHTML = (line == "") ? "♪" : line.trim();
-        }
-        lyricDiv.appendChild(lineDiv);
-    });
-    return lyricDiv;
-}
-
 /** hides the spotify ui elements for showing custom lyrics. */
 function hideSpotifyLyricsUi(mainContent) {
     //remove any previously set lyrics.
@@ -196,77 +148,67 @@ function hideSpotifyLyricsUi(mainContent) {
 /** Showing spotify lyrics UI, call this when custom lyrics are not available */
 function showSpotifyLyricsUi() {
     const mainContent = document.querySelector(`.${SF_CLASSNAME_LYRICS_CONTAINER}`);
-    const oldLyrics = mainContent.querySelector(`.${CLASSNAME_LYRICS_CONTAINER}`);
-    if (oldLyrics) {
-        if (DEBUG) console.log('removing previous lyrics')
-        oldLyrics.remove();
-    }
-    // hiding all other children of mainContent. it can't be removed, spotify need these for next track
-    for (item of mainContent.children) {
-        // item.style.visibility = 'visible';
-        item.style.display = 'flex';
+    if (mainContent) {
+        const oldLyrics = mainContent.querySelector(`.${CLASSNAME_LYRICS_CONTAINER}`);
+        if (oldLyrics) {
+            if (DEBUG) console.log('removing previous lyrics');
+            oldLyrics.remove();
+        }
+
+        // hiding all other children of mainContent. it can't be removed, spotify need these for next track
+        for (item of mainContent.children) {
+            // item.style.visibility = 'visible';
+            item.style.display = 'flex';
+        }
     }
 }
 
 /** Replace the existing lyrics ui with new lyrics content. */
-function replaceLyrics(lyrics) {
-    const lyricDivs = lrcToDivs(lyrics);
-    const mainContent = document.querySelector(`.${SF_CLASSNAME_LYRICS_CONTAINER}`);
-    if (mainContent) {
-        hideSpotifyLyricsUi(mainContent);
-        mainContent.appendChild(lyricDivs);
-        if (DEBUG) console.log('attaching playback observer')
-        const timeStampElement = selectById(ID_PLAYBACK_POSITION);
-        const config = {
-            attributes: false,
-            childList: true,
-            subtree: true,
-            characterData: true,
-            characterDataOldValue: true
-        };
-        playbackObserver.observe(timeStampElement, config);
-    } else {
-        if (DEBUG) console.log('failed to determine lyrics layout');
-    }
-}
+function replaceLyrics(lyricDivs) {
+    let retries = 3;
+    const retryInterval = 1000; // 1 second interval between retries
 
-/** Pulling lyrics from internet and replacing it in UI*/
-async function fetchAndShowLyrics(title, artist) {
-    try {
-        if (DEBUG) console.log('searching for lyrics');
-        const url = `https://lrclib.net/api/search?track_name=${title}&artist_name=${artist}`;
-        const response = await fetch(url, headers);
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        const lyricsData = await response.json();
-        if (lyricsData.length > 0) {
-            if (DEBUG) console.log('found ', lyricsData.length, ' results.');
-            const lyricsItem = lyricsData.find(it => !it.instrumental);
-            if (lyricsItem) {
-                const lyrics = lyricsItem.syncedLyrics || lyricsItem.plainLyrics;
-                replaceLyrics(lyrics);
-            } else {
-                if (DEBUG) console.log('failed to parse result for ', trackTitle);
-                showSpotifyLyricsUi();
-            }
+    const tryReplaceLyrics = () => {
+        const mainContent = document.querySelector(`.${SF_CLASSNAME_LYRICS_CONTAINER}`);
+        if (mainContent) {
+            hideSpotifyLyricsUi(mainContent);
+            mainContent.appendChild(lyricDivs);
+            if (DEBUG) console.log('attaching playback observer');
+            const timeStampElement = selectById(ID_PLAYBACK_POSITION);
+            const config = {
+                attributes: false,
+                childList: true,
+                subtree: true,
+                characterData: true,
+                characterDataOldValue: true
+            };
+            playbackObserver.observe(timeStampElement, config);
         } else {
-            if (DEBUG) console.log('No lyrics found');
-            showSpotifyLyricsUi();
+            if (retries > 0) {
+                retries--;
+                setTimeout(tryReplaceLyrics, retryInterval);
+            } else {
+                if (DEBUG) console.log('failed to determine lyrics layout');
+            }
         }
-    } catch (error) {
-        console.error('Error fetching lyrics:', error);
-        showSpotifyLyricsUi();
-    }
+    };
+
+    tryReplaceLyrics();
 }
 
 /** Preaparing trackInfo for network request */
-function pullTrackInfo() {
+async function pullTrackInfo() {
     const trackTitle = selectById(ID_TITLE).textContent;
     const artist = selectById(ID_ARTIST).textContent;
-    if (DEBUG) console.log('currentTrack: ', trackTitle)
-    fetchAndShowLyrics(trackTitle, artist);
+    if (trackTitle && artist) {
+        const lyricsDiv = await lyricsManager.getLyrics(trackTitle, artist);
+        if (lyricsDiv != null) {
+            replaceLyrics(lyricsDiv);
+        }
+        else showSpotifyLyricsUi();
+    }
 }
+
 
 /** Handle the state changes of lyrics button in now playing bar */
 function handleButtonEvent() {
@@ -282,8 +224,7 @@ function handleButtonEvent() {
 
 /** Disconnects all observers */
 function detachListener() {
-    if (DEBUG) console.log('disconnecting widget and playback observer')
-    widgetObserver.disconnect();
+    if (DEBUG) console.log('detaching playback observer');
     playbackObserver.disconnect();
 }
 
@@ -293,11 +234,11 @@ function init() {
     if (lyricsButton) {
         if (DEBUG) console.log('starting observers');
         buttonObserver.disconnect(); // disconnecting previous, if any
-        buttonObserver.observe(lyricsButton, { attributes: true, attributeFilter: [ATTR_BUTTON_LYRICS_ACTIVE], childList: false })
+        buttonObserver.observe(lyricsButton, { attributes: true, attributeFilter: [ATTR_BUTTON_LYRICS_ACTIVE], childList: false });
         observeNowPlayingWidget();
     }
     else {
-        if (DEBUG) console.log('lyrics button not found')
+        if (DEBUG) console.log('lyrics button not found');
         window.setTimeout(init, 1000);
     }
 }
@@ -323,7 +264,6 @@ function applyStyling() {
             margin: 16px;
             font-weight: 700;
             color: var(--lyrics-color-active);
-            font-family: sans-serif;
             line-height: 1em;
             max-width: -webkit-max-content;
             max-width: -moz-max-content;
@@ -333,7 +273,8 @@ function applyStyling() {
             cursor:pointer;
         }
         .${CLASSNAME_LYRICS_PASSED}{
-            color: var(--lyrics-color-passed, rgba(255, 255, 255, 0.7));
+            // color: var(--lyrics-color-passed, rgba(255, 255, 255, 0.7));
+            color:  rgba(255, 255, 255, 0.7);
         }
         .${CLASSNAME_INACTIVE_LYRICS}{
             color: var(--lyrics-color-inactive, rgb(0, 0, 0))
@@ -341,6 +282,13 @@ function applyStyling() {
         .${CLASSNAME_ACTIVE_LYRICS}{
             color: var(--lyrics-color-active, rgb(255, 255, 255));
             font-size:  1.8rem;
+        }
+        .${CLASSNAME_INFOLINE} p{
+            font-size: 0.8rem;
+            font-weight:500;
+            font-style:italic;
+            color:  rgba(255, 255, 255, 0.5);
+            text-decoration:none;
         }
     `;
     document.head.appendChild(style);

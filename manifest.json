@@ -3,15 +3,17 @@
     "name": "Lyrics for Spotify Web",
     "short_name": "Lyrics4Spotify",
     "description": "A browser extension that displays lyrics in Spotify web UI",
-    "version": "0.1",
-    "version_name": "0.1 alpha",
+    "version": "0.2",
+    "version_name": "0.2 beta",
     "content_scripts": [
         {
             "matches": [
                 "https://open.spotify.com/*"
             ],
             "js": [
-                "main.js"
+                "src/utils.js",
+                "src/LyricsManager.js",
+                "src/main.js"
             ]
         }
     ],

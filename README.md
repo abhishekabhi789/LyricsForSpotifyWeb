@@ -19,10 +19,6 @@ Chrome extension for Spotify Web to get more lyrics.<br>
 > [!CAUTION]
 > It may often cause UI issues that may need a reload to be fixed.
 
-> [!TIP]
-> Clicking the lyrics button ( :microphone: ) reloads the lyrics UI alone.
-
-
 
 ### :pill: Installation
 
