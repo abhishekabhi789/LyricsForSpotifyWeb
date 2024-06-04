@@ -1,4 +1,4 @@
-const DEBUG = true;
+var DEBUG = false;
 
 // SPOTIFY CONSTANTS
 const ID_BUTTON_LYRICS = 'lyrics-button';
@@ -70,6 +70,7 @@ function observeNowPlayingWidget() {
         widgetObserver.observe(nowPlayingWidget, { attributes: true, characterData: true, childList: true })
     }
     else {
+        if (DEBUG) console.log('now playing widget not found');
         window.setTimeout(observeNowPlayingWidget, 1000);
     }
 }
@@ -115,7 +116,7 @@ function updateLyricsClassNames(playbackTime) {
 
 /** This function handles the lyrics line clicks */
 function changePlayBackPosition(timeStamp) {
-    if (DEBUG) console.log('trying to change playback to ', timeStamp);
+    if (DEBUG) console.log('trying to change playback to', timeStamp);
     const duration = selectById(ID_PLAYBACK_DURATION).textContent;
     const timeStampSeconds = parseTimestamp(timeStamp);
     const durationSeconds = parseTimestamp(duration);
@@ -132,21 +133,38 @@ function changePlayBackPosition(timeStamp) {
 
 /** hides the spotify ui elements for showing custom lyrics. */
 function hideSpotifyLyricsUi(mainContent) {
+    if (DEBUG) console.log('hiding spotify original UI');
     //remove any previously set lyrics.
     const oldLyrics = mainContent.querySelector(`.${CLASSNAME_LYRICS_CONTAINER}`);
     if (oldLyrics) {
         if (DEBUG) console.log('removing previous lyrics')
         oldLyrics.remove();
     }
-    // hiding all other children of mainContent. it can't be removed, spotify need these for next track
-    for (item of mainContent.children) {
-        // item.style.visibility = 'hidden';
-        item.style.display = 'none';
+    // hiding all other children of mainContent. it shouldn't be removed, spotify need these for next track
+    if (mainContent.children.length != 0) {
+        for (const item of mainContent.children) {
+            // item.style.visibility = 'hidden';
+            item.style.display = 'none';
+        }
+    } else {
+        //childrens are not available to hide.
+        let attempts = 0;
+        const maxAttempts = 10;
+        const interval = setInterval(() => {
+            if (mainContent.childList.length != 0 || attempts >= maxAttempts) {
+                clearInterval(interval);
+            } else {
+                if (DEBUG) console.log('re attempting to hide spotify lyrics UI');
+                attempts++;
+                hideSpotifyLyricsUi(mainContent);
+            }
+        }, 100);
     }
 }
 
 /** Showing spotify lyrics UI, call this when custom lyrics are not available */
 function showSpotifyLyricsUi() {
+    if (DEBUG) console.log('showing spotify original UI');
     const mainContent = document.querySelector(`.${SF_CLASSNAME_LYRICS_CONTAINER}`);
     if (mainContent) {
         const oldLyrics = mainContent.querySelector(`.${CLASSNAME_LYRICS_CONTAINER}`);
@@ -156,7 +174,7 @@ function showSpotifyLyricsUi() {
         }
 
         // hiding all other children of mainContent. it can't be removed, spotify need these for next track
-        for (item of mainContent.children) {
+        for (const item of mainContent.children) {
             // item.style.visibility = 'visible';
             item.style.display = 'flex';
         }
@@ -166,6 +184,7 @@ function showSpotifyLyricsUi() {
 /** Replace the existing lyrics ui with new lyrics content. */
 function replaceLyrics(lyricDivs) {
     let retries = 3;
+    if (DEBUG) console.log('replacing lyrics UI');
     const retryInterval = 1000; // 1 second interval between retries
 
     const tryReplaceLyrics = () => {
@@ -213,7 +232,7 @@ async function pullTrackInfo() {
 /** Handle the state changes of lyrics button in now playing bar */
 function handleButtonEvent() {
     const lyricsUiVisible = selectById(ID_BUTTON_LYRICS).getAttribute(ATTR_BUTTON_LYRICS_ACTIVE) == 'true';
-    if (DEBUG) console.log('lyrics UI visible: ', lyricsUiVisible);
+    if (DEBUG) console.log('lyrics UI visible:', lyricsUiVisible);
     if (lyricsUiVisible) {
         observeNowPlayingWidget();
     }
@@ -242,24 +261,60 @@ function init() {
         window.setTimeout(init, 1000);
     }
 }
+// listening for config changes
+chrome.storage.onChanged.addListener(function (changes, namespace) {
+    if (namespace === 'sync') {
+        if (changes.enableExtension != undefined) {
+            if (DEBUG) console.log('EXTENSION', changes.enableExtension.newValue ? "ENABLED" : "DISABLED");
+            if (changes.enableExtension.newValue == true) {
+                console.log('Restarting plugin services')
+                init();
+            } else {
+                console.log('Stopping plugin services')
+                detachListener();
+                widgetObserver.disconnect();
+                buttonObserver.disconnect();
+                showSpotifyLyricsUi();
+            }
+        }
+        if (changes.removeBackground != undefined) {
+            const bgColor = changes.removeBackground.newValue == true ? 'transparent' : 'var(--lyrics-color-background)';
+            if (DEBUG) console.log('changing background to:', bgColor);
+            document.querySelector(`.${CLASSNAME_LYRICS_CONTAINER}`).style.backgroundColor = bgColor;
+        }
+        if (changes.lyricsFont != undefined) {
+            if (DEBUG) console.log('changing font:', changes.lyricsFont.newValue);
+            document.querySelector(':root').style.setProperty('--lyrics-font', changes.lyricsFont.newValue);
+        }
+        if (changes.enableLogging != undefined) {
+            const value = changes.enableLogging.newValue;
+            console.log('Debugging', value ? "enabled" : "disabled");
+            DEBUG = value;
+        }
+    }
+});
 
 /** Styling for the custom lyrics UI. */
-function applyStyling() {
+function applyStyling(bgColor, lyricsFont) {
     const style = document.createElement('style');
     style.textContent = `
+        :root{
+            --lyrics-font: ${lyricsFont};
+        }
         .${CLASSNAME_LYRICS_CONTAINER}{
-            text-align:center;
-            background-color: var(--lyrics-color-background);
+            text-align: center;
             padding: 64px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            cursor:default;
+            cursor: default;
+            font-family: var(--lyrics-font);
+            background-color: ${bgColor};
+            user-select: none;
         }
         .${CLASSNAME_LYRICS_ADDED}{
-            transition: all .35s cubic-bezier(0.64, 0.39, 0.51, 0.9);
-            font-family: Arial, sans-serif;
+            transition: all .4s cubic-bezier(0.64, 0.39, 0.51, 0.9);
             font-size: 1.5rem;
             margin: 16px;
             font-weight: 700;
@@ -269,33 +324,42 @@ function applyStyling() {
             max-width: -moz-max-content;
             max-width: max-content;
             position: relative;
-            display:block;
-            cursor:pointer;
+            display: block;
+            cursor: pointer;
         }
         .${CLASSNAME_LYRICS_PASSED}{
-            // color: var(--lyrics-color-passed, rgba(255, 255, 255, 0.7));
-            color:  rgba(255, 255, 255, 0.7);
+            color: rgba(255, 255, 255, 0.85);
         }
         .${CLASSNAME_INACTIVE_LYRICS}{
-            color: var(--lyrics-color-inactive, rgb(0, 0, 0))
+            color: rgba(255, 255, 255, 0.5)
         }
         .${CLASSNAME_ACTIVE_LYRICS}{
-            color: var(--lyrics-color-active, rgb(255, 255, 255));
-            font-size:  1.8rem;
+            color: rgb(255, 255, 255);
+            font-size: 1.6rem;
         }
         .${CLASSNAME_INFOLINE} p{
             font-size: 0.8rem;
-            font-weight:500;
-            font-style:italic;
+            font-weight: 500;
+            font-style: italic;
             color:  rgba(255, 255, 255, 0.5);
-            text-decoration:none;
+            text-decoration: none;
         }
     `;
     document.head.appendChild(style);
+
 }
 
 window.addEventListener('load', function () {
-    init();
-    applyStyling();
-    if (DEBUG) console.log('extension loaded');
+    chrome.storage.sync.get(['removeBackground', 'lyricsFont', 'enableLogging', 'enableExtension'], function (results) {
+        DEBUG = results.enableLogging == true ? true : false;
+        const extensionEnabled = results.enableExtension == false ? false : true; //if undefined, enable extension
+        const lyricsFont = results.lyricsFont != undefined ? results.lyricsFont : 'Arial sans';
+        const bgColor = results.removeBackground == true ? 'transparent' : 'var(--lyrics-color-background)';
+        if (DEBUG) console.log('Configs:', 'font', lyricsFont, '| color', bgColor, '| enabled', extensionEnabled);
+        applyStyling(bgColor, lyricsFont);
+        if (extensionEnabled) {
+            init();
+            console.log('extension loaded');
+        }
+    });
 });

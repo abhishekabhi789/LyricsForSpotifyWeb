@@ -1,0 +1,82 @@
+body {
+    width: 25em;
+    font-family: 'Segoe UI', Tahoma, Verdana, sans-serif;
+    padding: 10px;
+    box-sizing: border-box;
+    color: #333;
+    user-select: none;
+}
+
+.title {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    font-family: 'Lucida Sans', sans-serif;
+}
+
+.config-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+label {
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+input[type="checkbox"],
+select {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+input[type="checkbox"]:hover,
+select:hover {
+    border-color: #007BFF;
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.2);
+}
+
+input[type="checkbox"]:focus,
+select:focus {
+    border-color: #007BFF;
+    outline: none;
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+}
+
+#footer {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 12px;
+    color: #666;
+}
+
+#footer a {
+    color: #999;
+    text-decoration: none;
+}
+
+#footer a:hover {
+    color: #007BFF;
+    text-decoration: underline;
+}
+
+@media (prefers-color-scheme: dark) {
+    body {
+        color: white;
+        background: black;
+    }
+
+    input[type="checkbox"],
+    select {
+        background-color: black;
+        color: white;
+    }
+}
