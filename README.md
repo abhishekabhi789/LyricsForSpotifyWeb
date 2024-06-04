@@ -1,6 +1,11 @@
 <div align="center">
-
+<picture>
+  <img alt="Extension Icon" src="assets/icon128.png">
+</picture>
 <h2>Lyrics for Spotify Web</h2>
+
+![Version Badge](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fabhishekabhi789%2FLyricsForSpotifyWeb%2Fmain%2Fmanifest.json&query=%24.version_name&style=for-the-badge&label=Version&color=cyan)
+
 <br>
 Chrome extension for Spotify Web to get more lyrics.<br>
 <hr>
@@ -22,7 +27,7 @@ Chrome extension for Spotify Web to get more lyrics.<br>
 
 ### :pill: Installation
 
-- Download the repo as zip.
+- Download the repo as zip ([Click Here](https://github.com/abhishekabhi789/LyricsForSpotifyWeb/archive/refs/heads/main.zip)).
 - Extract the folder.
 - Load as unpacked extension ([like this](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked)).
 

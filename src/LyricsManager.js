@@ -46,7 +46,9 @@ class LyricsManager {
             if (lyricsData.length > 0) {
                 const lyricsItem = lyricsData.find(it => !it.instrumental);
                 const lyrics = lyricsItem ? (lyricsItem.syncedLyrics || lyricsItem.plainLyrics) : null;
-                if (lyrics == null) return null;
+                if (lyrics == null) {
+                    console.log("no lyrics found for",trackTitle,artist);
+                    return null};
                 const lyricsDiv = this.#lrcToDivs(lyrics);
                 this.#lyricsCache.set(cacheKey, lyricsDiv);
                 return lyricsDiv;
