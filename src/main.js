@@ -14,7 +14,8 @@ const SF_CLASSNAME_LYRICS_CONTAINER = 'FUYNhisXTCmbzt9IDxnT';
 
 // EXTENSION CONSTANTS
 /** Class name of the custom lyrics div. */
-const CLASSNAME_LYRICS_CONTAINER = 'lyrics_container';
+const CLASSNAME_LYRICS_CONTAINER = 'lyrics-container';
+const CUSTOM_STYLE_ELEMENT_ID = 'custom-lyrics-styles';
 /** Class name of the custom lyrics line div */
 const CLASSNAME_LYRICS_ADDED = 'added-lyrics';
 const CLASSNAME_LYRICS_PASSED = 'passed-lyrics';
@@ -108,6 +109,7 @@ function updateLyricsClassNames(playbackTime) {
                 cl.add(CLASSNAME_INACTIVE_LYRICS);
             }
         });
+        currentLyrics.classList.remove(CLASSNAME_LYRICS_PASSED); // prevent multiple classes
         // assigning active lyrics class only for the line for this timestamp
         currentLyrics.classList.add(CLASSNAME_ACTIVE_LYRICS);
         currentLyrics.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
@@ -147,7 +149,7 @@ function hideSpotifyLyricsUi(mainContent) {
             item.style.display = 'none';
         }
     } else {
-        //childrens are not available to hide.
+        //children are not available to hide.
         let attempts = 0;
         const maxAttempts = 10;
         const interval = setInterval(() => {
@@ -291,12 +293,21 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
             console.log('Debugging', value ? "enabled" : "disabled");
             DEBUG = value;
         }
+        if (changes.enableCustomStyles != undefined) {
+            //refreshes when enable or disable custom theme checkbox
+            refreshTheme();
+        }
+        //refreshes when any of the custom styles updates
+        if (changes.passedLyricsStyles != undefined || changes.activeLyricsStyles != undefined || changes.inactiveLyricsStyles != undefined) {
+            refreshTheme();
+        }
     }
 });
 
-/** Styling for the custom lyrics UI. */
-function applyStyling(bgColor, lyricsFont) {
+/** applying styles for the custom lyrics UI. */
+function applyStyling(bgColor, lyricsFont, passedLStyles, activeLStyles, inactiveLStyles) {
     const style = document.createElement('style');
+    style.id = CUSTOM_STYLE_ELEMENT_ID;
     style.textContent = `
         :root{
             --lyrics-font: ${lyricsFont};
@@ -328,14 +339,13 @@ function applyStyling(bgColor, lyricsFont) {
             cursor: pointer;
         }
         .${CLASSNAME_LYRICS_PASSED}{
-            color: rgba(255, 255, 255, 0.85);
+            ${passedLStyles}
         }
         .${CLASSNAME_INACTIVE_LYRICS}{
-            color: rgba(255, 255, 255, 0.5)
+            ${inactiveLStyles}
         }
         .${CLASSNAME_ACTIVE_LYRICS}{
-            color: rgb(255, 255, 255);
-            font-size: 1.6rem;
+            ${activeLStyles}
         }
         .${CLASSNAME_INFOLINE} p{
             font-size: 0.8rem;
@@ -348,17 +358,38 @@ function applyStyling(bgColor, lyricsFont) {
     document.head.appendChild(style);
 
 }
+/** replaces the theme as per the configs. */
+function refreshTheme() {
+    if (DEBUG) console.log('refreshing theme');
+    const currentStyle = document.getElementById(CUSTOM_STYLE_ELEMENT_ID);
+    if (DEBUG) console.log('current style', currentStyle);
+    chrome.storage.sync.get(['removeBackground', 'lyricsFont', 'enableCustomStyles', 'passedLyricsStyles', 'activeLyricsStyles', 'inactiveLyricsStyles'], function (results) {
+        if (DEBUG) console.log('configs', 'enableCustomStyles', results.enableCustomStyles, 'passedLyricsStyles', results.passedLyricsStyles, 'activeLyricsStyles', results.activeLyricsStyles, 'inactiveLyricsStyles', results.inactiveLyricsStyles);
+        const lyricsFont = results.lyricsFont != undefined ? results.lyricsFont : 'Arial sans';
+        const bgColor = results.removeBackground == true ? 'transparent' : 'var(--lyrics-color-background)';
+        if (DEBUG) console.log('Configs:', 'font', lyricsFont, '| color', bgColor);
+        if (results.enableCustomStyles == true) {
+            if (DEBUG) console.log('adding custom styles');
+            const passedLStyles = results.passedLyricsStyles != undefined ? results.passedLyricsStyles : passedLDefaultStyles;
+            const activeLStyles = results.activeLyricsStyles != undefined ? results.activeLyricsStyles : activeLDefaultStyles;
+            const inactiveLStyles = results.inactiveLyricsStyles != undefined ? results.inactiveLyricsStyles : inactiveLDefaultStyles;
+            if (currentStyle != undefined) { currentStyle.remove(); }
+            applyStyling(bgColor, lyricsFont, passedLStyles, activeLStyles, inactiveLStyles);
+        } else {
+            if (DEBUG) console.log('removing custom styles');
+            if (currentStyle != undefined) { currentStyle.remove(); }
+            applyStyling(bgColor, lyricsFont, passedLDefaultStyles, activeLDefaultStyles, inactiveLDefaultStyles);
+        }
+    });
+}
 
 window.addEventListener('load', function () {
     chrome.storage.sync.get(['removeBackground', 'lyricsFont', 'enableLogging', 'enableExtension'], function (results) {
         DEBUG = results.enableLogging == true ? true : false;
         const extensionEnabled = results.enableExtension == false ? false : true; //if undefined, enable extension
-        const lyricsFont = results.lyricsFont != undefined ? results.lyricsFont : 'Arial sans';
-        const bgColor = results.removeBackground == true ? 'transparent' : 'var(--lyrics-color-background)';
-        if (DEBUG) console.log('Configs:', 'font', lyricsFont, '| color', bgColor, '| enabled', extensionEnabled);
-        applyStyling(bgColor, lyricsFont);
         if (extensionEnabled) {
             init();
+            refreshTheme();
             console.log('extension loaded');
         }
     });

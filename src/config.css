@@ -1,5 +1,5 @@
 body {
-    width: 25em;
+    width: 30em;
     font-family: 'Segoe UI', Tahoma, Verdana, sans-serif;
     padding: 10px;
     box-sizing: border-box;
@@ -15,11 +15,23 @@ body {
     font-family: 'Lucida Sans', sans-serif;
 }
 
-.config-item {
+.config-item,
+.custom-styles {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
+}
+
+.custom-styles {
+    flex-direction: column;
+    align-items: flex-start;
+    padding-left: 10px;
+    display: none;
+}
+
+.custom-styles>textarea {
+    width: 100%;
 }
 
 label {
@@ -28,7 +40,43 @@ label {
     font-size: 14px;
 }
 
-input[type="checkbox"],
+.track {
+    display: inline-block;
+    height: 1em;
+    width: 2em;
+    background: #f1f1f1;
+    border-radius: 1em;
+    border-width: 2px;
+    border-style: solid;
+    border-color: #666;
+    padding: 5px;
+    font-size: 1.2em;
+}
+
+.track input {
+    position: absolute;
+    display: none;
+}
+
+.thumb {
+    height: 1em;
+    width: 1em;
+    border-radius: 0.8em;
+    background: #FFF;
+    box-shadow: 0 0.1em 0.3em rgba(0, 0, 0, 0.3);
+    -webkit-transition: all 350ms;
+    -moz-transition: all 350ms;
+    transition: all 350ms;
+}
+
+.track input:checked+.thumb {
+    -webkit-transform: translate3d(100%, 0, 0);
+    -moz-transform: translate3d(100%, 0, 0);
+    transform: translate3d(100%, 0, 0);
+    background: #1cffa0;
+}
+
+textarea,
 select {
     padding: 8px;
     border: 1px solid #ccc;
@@ -38,15 +86,15 @@ select {
     transition: border-color 0.3s, box-shadow 0.3s;
 }
 
-input[type="checkbox"]:hover,
+textarea:hover,
 select:hover {
-    border-color: #007BFF;
+    border-color: #1cffa0;
     box-shadow: 0 0 8px rgba(0, 123, 255, 0.2);
 }
 
-input[type="checkbox"]:focus,
+textarea:focus,
 select:focus {
-    border-color: #007BFF;
+    border-color: #1cffa0;
     outline: none;
     box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
 }
@@ -59,7 +107,7 @@ select:focus {
 }
 
 #footer a {
-    color: #999;
+    color: #1cffa0;
     text-decoration: none;
 }
 
@@ -70,13 +118,17 @@ select:focus {
 
 @media (prefers-color-scheme: dark) {
     body {
-        color: white;
-        background: black;
+        color: #dadada;
+        background: #161616;
     }
 
-    input[type="checkbox"],
-    select {
-        background-color: black;
-        color: white;
+    textarea,
+    select, .track {
+        background-color: #212121;
+        color: #fafafa;
+    }
+
+    .thumb {
+        background-color: #515151;
     }
 }

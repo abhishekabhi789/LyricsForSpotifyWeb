@@ -1,11 +1,35 @@
 const manifestData = chrome.runtime.getManifest();
+
+function showCustomStyleConfigs(enabled) {
+    const elStylesPassed = document.getElementById('passedLyricsStyles');
+    const elStylesActive = document.getElementById('activeLyricsStyles');
+    const elStylesInactive = document.getElementById('inactiveLyricsStyles');
+    document.querySelectorAll('.custom-styles').forEach(element => {
+        element.style.display = enabled ? 'flex' : 'none';
+    });
+    if (enabled) {
+        chrome.storage.sync.get(['passedLyricsStyles', 'activeLyricsStyles', 'inactiveLyricsStyles'], function (result) {
+            elStylesPassed.value = result.passedLyricsStyles != undefined ? result.passedLyricsStyles : passedLDefaultStyles;
+            elStylesActive.value = result.activeLyricsStyles != undefined ? result.activeLyricsStyles : activeLDefaultStyles;
+            elStylesInactive.value = result.inactiveLyricsStyles != undefined ? result.inactiveLyricsStyles : inactiveLDefaultStyles;
+        });
+
+        [elStylesPassed, elStylesActive, elStylesInactive].forEach((el) => {
+            el.addEventListener('input', function () {
+                chrome.storage.sync.set({ [el.id]: el.value });
+            });
+        });
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     const elSettingsRemoveBg = document.getElementById('removeBackground');
     const elSettingsCustomFont = document.getElementById('lyricsFont');
     const elSettingsEnableLogging = document.getElementById('enableLogging');
     const elSettingsEnableExtension = document.getElementById('enableExtension');
+    const elSettingsCustomStyles = document.getElementById('enableCustomStyles');
 
-    chrome.storage.sync.get(['removeBackground', 'lyricsFont', 'enableLogging', 'enableExtension'], function (result) {
+    chrome.storage.sync.get(['removeBackground', 'lyricsFont', 'enableLogging', 'enableExtension', 'enableCustomStyles'], function (result) {
         if (result.enableExtension != undefined) {
             elSettingsEnableExtension.checked = result.enableExtension;
         } else {
@@ -23,6 +47,13 @@ document.addEventListener('DOMContentLoaded', function () {
             elSettingsEnableLogging.checked = result.enableLogging;
         } else {
             elSettingsEnableLogging.checked = false;
+        }
+        if (result.enableCustomStyles != undefined) {
+            const enabled = result.enableCustomStyles;
+            elSettingsCustomStyles.checked = enabled;
+            showCustomStyleConfigs(enabled);
+        } else {
+            elSettingsCustomStyles.checked = false;
         }
     });
 
@@ -47,6 +78,13 @@ document.addEventListener('DOMContentLoaded', function () {
             console.log('Enable Logging config updated to ' + elSettingsEnableLogging.checked);
         });
     });
+    elSettingsCustomStyles.addEventListener('change', function () {
+        const customStylesEnabled = elSettingsCustomStyles.checked;
+        chrome.storage.sync.set({ enableCustomStyles: customStylesEnabled }, function () {
+            console.log('Enable Custom Styling config updated to ' + customStylesEnabled);
+            showCustomStyleConfigs(customStylesEnabled);
+        });
+    });
 });
 
 function attachFooter() {
@@ -62,7 +100,7 @@ function attachFooter() {
     repoLinkContainer.appendChild(link);
     footer.appendChild(repoLinkContainer);
     const versionLine = document.createElement('p');
-    versionLine.textContent = 'Version '+manifestData.version_name;
+    versionLine.textContent = 'Version ' + manifestData.version_name;
     footer.appendChild(versionLine);
 }
 attachFooter();
