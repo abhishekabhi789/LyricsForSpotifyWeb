@@ -44,7 +44,10 @@ class LyricsManager {
             }
             const lyricsData = await response.json();
             if (lyricsData.length > 0) {
-                const lyricsItem = lyricsData.find(it => !it.instrumental);
+                const lyricsItem = lyricsData.find(it => it.syncedLyrics !== null);
+                if(!lyricsItem){
+                    lyricsItem = lyricsData.find(it=> it.plainLyrics !== null);
+                }
                 const lyrics = lyricsItem ? (lyricsItem.syncedLyrics || lyricsItem.plainLyrics) : null;
                 if (lyrics == null) {
                     console.log("no lyrics found for",trackTitle,artist);

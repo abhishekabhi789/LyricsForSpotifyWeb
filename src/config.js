@@ -1,6 +1,7 @@
 const manifestData = chrome.runtime.getManifest();
 
 function showCustomStyleConfigs(enabled) {
+    const elStylesMainContainer = document.getElementById('allLyricsStyle');
     const elStylesPassed = document.getElementById('passedLyricsStyles');
     const elStylesActive = document.getElementById('activeLyricsStyles');
     const elStylesInactive = document.getElementById('inactiveLyricsStyles');
@@ -8,13 +9,14 @@ function showCustomStyleConfigs(enabled) {
         element.style.display = enabled ? 'flex' : 'none';
     });
     if (enabled) {
-        chrome.storage.sync.get(['passedLyricsStyles', 'activeLyricsStyles', 'inactiveLyricsStyles'], function (result) {
+        chrome.storage.sync.get(['mainContainerStyles', 'allLyricsStyle', 'passedLyricsStyles', 'activeLyricsStyles', 'inactiveLyricsStyles'], function (result) {
+            elStylesMainContainer.value = result.allLyricsStyle != undefined ? result.allLyricsStyle : allLyricsDefaultStyle;
             elStylesPassed.value = result.passedLyricsStyles != undefined ? result.passedLyricsStyles : passedLDefaultStyles;
             elStylesActive.value = result.activeLyricsStyles != undefined ? result.activeLyricsStyles : activeLDefaultStyles;
             elStylesInactive.value = result.inactiveLyricsStyles != undefined ? result.inactiveLyricsStyles : inactiveLDefaultStyles;
         });
 
-        [elStylesPassed, elStylesActive, elStylesInactive].forEach((el) => {
+        [elStylesMainContainer, elStylesPassed, elStylesActive, elStylesInactive].forEach((el) => {
             el.addEventListener('input', function () {
                 chrome.storage.sync.set({ [el.id]: el.value });
             });
@@ -29,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const elSettingsEnableExtension = document.getElementById('enableExtension');
     const elSettingsCustomStyles = document.getElementById('enableCustomStyles');
 
-    chrome.storage.sync.get(['removeBackground', 'lyricsFont', 'enableLogging', 'enableExtension', 'enableCustomStyles'], function (result) {
+    chrome.storage.sync.get(['removeBackground', 'lyricsFont', 'lyricsAlignment', 'enableLogging', 'enableExtension', 'enableCustomStyles'], function (result) {
         if (result.enableExtension != undefined) {
             elSettingsEnableExtension.checked = result.enableExtension;
         } else {
@@ -42,6 +44,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (result.lyricsFont != undefined) {
             elSettingsCustomFont.value = result.lyricsFont;
+        }
+        if (result.lyricsAlignment != undefined) {
+            document.querySelector(`input[name="lyricsAlignment"][id="${result.lyricsAlignment}"]`).checked = true;
         }
         if (result.enableLogging != undefined) {
             elSettingsEnableLogging.checked = result.enableLogging;
@@ -72,6 +77,12 @@ document.addEventListener('DOMContentLoaded', function () {
         chrome.storage.sync.set({ lyricsFont: elSettingsCustomFont.value }, function () {
             console.log('Custom font config updated to ' + elSettingsCustomFont.value);
         });
+    });
+    document.getElementById('lyrics-alignment-config').querySelectorAll('input[type=radio][name=lyricsAlignment]').forEach(function (element) {
+        element.addEventListener('click', function () {
+            const choice = element.getAttribute('id');
+            chrome.storage.sync.set({ lyricsAlignment: choice });
+        })
     });
     elSettingsEnableLogging.addEventListener('change', function () {
         chrome.storage.sync.set({ enableLogging: elSettingsEnableLogging.checked }, function () {

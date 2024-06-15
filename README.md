@@ -21,9 +21,6 @@ Chrome extension for Spotify Web to get more lyrics.<br>
 > 
 > Lyrics in full screen view won't be altered.
 
-> [!CAUTION]
-> It may often cause UI issues that may need a reload to be fixed.
-
 
 ### :pill: Installation
 

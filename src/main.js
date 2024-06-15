@@ -288,6 +288,10 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
             if (DEBUG) console.log('changing font:', changes.lyricsFont.newValue);
             document.querySelector(':root').style.setProperty('--lyrics-font', changes.lyricsFont.newValue);
         }
+        if (changes.lyricsAlignment != undefined) {
+            if (DEBUG) console.log('Lyrics Alignment changed to', changes.lyricsAlignment.newValue);
+            refreshTheme();
+        }
         if (changes.enableLogging != undefined) {
             const value = changes.enableLogging.newValue;
             console.log('Debugging', value ? "enabled" : "disabled");
@@ -298,14 +302,14 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
             refreshTheme();
         }
         //refreshes when any of the custom styles updates
-        if (changes.passedLyricsStyles != undefined || changes.activeLyricsStyles != undefined || changes.inactiveLyricsStyles != undefined) {
+        if (changes.allLyricsStyle != undefined || changes.passedLyricsStyles != undefined || changes.activeLyricsStyles != undefined || changes.inactiveLyricsStyles != undefined) {
             refreshTheme();
         }
     }
 });
 
 /** applying styles for the custom lyrics UI. */
-function applyStyling(bgColor, lyricsFont, passedLStyles, activeLStyles, inactiveLStyles) {
+function applyStyling(bgColor, lyricsAlignment, lyricsFont, allLyricsStyle, passedLStyles, activeLStyles, inactiveLStyles) {
     const style = document.createElement('style');
     style.id = CUSTOM_STYLE_ELEMENT_ID;
     style.textContent = `
@@ -313,30 +317,18 @@ function applyStyling(bgColor, lyricsFont, passedLStyles, activeLStyles, inactiv
             --lyrics-font: ${lyricsFont};
         }
         .${CLASSNAME_LYRICS_CONTAINER}{
-            text-align: center;
+            text-align: ${lyricsAlignment};
             padding: 64px;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center;
+            align-items: ${lyricsAlignment};
             cursor: default;
             font-family: var(--lyrics-font);
             background-color: ${bgColor};
-            user-select: none;
         }
         .${CLASSNAME_LYRICS_ADDED}{
-            transition: all .4s cubic-bezier(0.64, 0.39, 0.51, 0.9);
-            font-size: 1.5rem;
-            margin: 16px;
-            font-weight: 700;
-            color: var(--lyrics-color-active);
-            line-height: 1em;
-            max-width: -webkit-max-content;
-            max-width: -moz-max-content;
-            max-width: max-content;
-            position: relative;
-            display: block;
-            cursor: pointer;
+           ${allLyricsStyle}
         }
         .${CLASSNAME_LYRICS_PASSED}{
             ${passedLStyles}
@@ -362,23 +354,24 @@ function applyStyling(bgColor, lyricsFont, passedLStyles, activeLStyles, inactiv
 function refreshTheme() {
     if (DEBUG) console.log('refreshing theme');
     const currentStyle = document.getElementById(CUSTOM_STYLE_ELEMENT_ID);
-    if (DEBUG) console.log('current style', currentStyle);
-    chrome.storage.sync.get(['removeBackground', 'lyricsFont', 'enableCustomStyles', 'passedLyricsStyles', 'activeLyricsStyles', 'inactiveLyricsStyles'], function (results) {
-        if (DEBUG) console.log('configs', 'enableCustomStyles', results.enableCustomStyles, 'passedLyricsStyles', results.passedLyricsStyles, 'activeLyricsStyles', results.activeLyricsStyles, 'inactiveLyricsStyles', results.inactiveLyricsStyles);
+    chrome.storage.sync.get(['removeBackground', 'lyricsAlignment', 'lyricsFont', 'enableCustomStyles', 'allLyricsStyle', 'passedLyricsStyles', 'activeLyricsStyles', 'inactiveLyricsStyles'], function (results) {
+        if (DEBUG) console.log('configs', 'enableCustomStyles', 'allLyricsStyle', results.allLyricsStyle, results.enableCustomStyles, 'passedLyricsStyles', results.passedLyricsStyles, 'activeLyricsStyles', results.activeLyricsStyles, 'inactiveLyricsStyles', results.inactiveLyricsStyles);
+        const lyricsAlignment = results.lyricsAlignment != undefined ? results.lyricsAlignment : 'center';
         const lyricsFont = results.lyricsFont != undefined ? results.lyricsFont : 'Arial sans';
         const bgColor = results.removeBackground == true ? 'transparent' : 'var(--lyrics-color-background)';
-        if (DEBUG) console.log('Configs:', 'font', lyricsFont, '| color', bgColor);
+        if (DEBUG) console.log('Configs:', 'font', lyricsFont, '| color', bgColor, '| alignment', lyricsAlignment);
         if (results.enableCustomStyles == true) {
             if (DEBUG) console.log('adding custom styles');
+            const allLyricsStyle = results.allLyricsStyle != undefined ? results.allLyricsStyle : allLyricsDefaultStyle;
             const passedLStyles = results.passedLyricsStyles != undefined ? results.passedLyricsStyles : passedLDefaultStyles;
             const activeLStyles = results.activeLyricsStyles != undefined ? results.activeLyricsStyles : activeLDefaultStyles;
             const inactiveLStyles = results.inactiveLyricsStyles != undefined ? results.inactiveLyricsStyles : inactiveLDefaultStyles;
             if (currentStyle != undefined) { currentStyle.remove(); }
-            applyStyling(bgColor, lyricsFont, passedLStyles, activeLStyles, inactiveLStyles);
+            applyStyling(bgColor, lyricsAlignment, lyricsFont, allLyricsStyle, passedLStyles, activeLStyles, inactiveLStyles);
         } else {
             if (DEBUG) console.log('removing custom styles');
             if (currentStyle != undefined) { currentStyle.remove(); }
-            applyStyling(bgColor, lyricsFont, passedLDefaultStyles, activeLDefaultStyles, inactiveLDefaultStyles);
+            applyStyling(bgColor, lyricsAlignment, lyricsFont, allLyricsDefaultStyle, passedLDefaultStyles, activeLDefaultStyles, inactiveLDefaultStyles);
         }
     });
 }

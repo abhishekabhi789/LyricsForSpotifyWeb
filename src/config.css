@@ -1,10 +1,23 @@
+:root {
+    --color-primary: #1cffa0;
+    --color-neutral: #787878;
+    --color-light-background: #f1f1f1;
+    --color-dark-background: #161616;
+    --color-light-text: #333;
+    --color-dark-text: #b1b1b1;
+}
+
 body {
     width: 30em;
     font-family: 'Segoe UI', Tahoma, Verdana, sans-serif;
     padding: 10px;
     box-sizing: border-box;
-    color: #333;
+    color: var(--color-light-text);
     user-select: none;
+}
+
+hr {
+    border-color: var(--color-primary);
 }
 
 .title {
@@ -34,21 +47,48 @@ body {
     width: 100%;
 }
 
-label {
+label,
+select {
     font-weight: bold;
-    margin-bottom: 5px;
     font-size: 14px;
+    cursor: pointer;
+}
+
+.radio-group input[type=radio] {
+    display: none;
+}
+
+.radio-group label {
+    display: inline-block;
+    padding: 5px 15px;
+}
+
+.radio-group input[type=radio]:checked+label {
+    color: white;
+    background-color: var(--color-primary);
+    font-weight: bold;
+}
+
+.radio-group label+input[type=radio]+label {
+    border-left: solid 1px var(--color-neutral);
+}
+
+.radio-group {
+    overflow: hidden;
+    border: solid 1px var(--color-neutral);
+    border-radius: 1em;
+    background-color: var(--color-light-background);
 }
 
 .track {
     display: inline-block;
     height: 1em;
     width: 2em;
-    background: #f1f1f1;
+    background: var(--color-light-background);
     border-radius: 1em;
-    border-width: 2px;
+    border-width: 1px;
     border-style: solid;
-    border-color: #666;
+    border-color: var(--color-neutral);
     padding: 5px;
     font-size: 1.2em;
 }
@@ -61,8 +101,8 @@ label {
 .thumb {
     height: 1em;
     width: 1em;
-    border-radius: 0.8em;
-    background: #FFF;
+    border-radius: 1em;
+    background: var(--color-light-background);
     box-shadow: 0 0.1em 0.3em rgba(0, 0, 0, 0.3);
     -webkit-transition: all 350ms;
     -moz-transition: all 350ms;
@@ -73,30 +113,33 @@ label {
     -webkit-transform: translate3d(100%, 0, 0);
     -moz-transform: translate3d(100%, 0, 0);
     transform: translate3d(100%, 0, 0);
-    background: #1cffa0;
+    background: var(--color-primary);
 }
 
 textarea,
 select {
     padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    background-color: var(--color-light-background);
+    border: 1px solid var(--color-neutral);
+    border-radius: 1em;
     font-size: 14px;
     box-sizing: border-box;
     transition: border-color 0.3s, box-shadow 0.3s;
 }
 
+.track:hover,
+.radio-group:hover,
 textarea:hover,
 select:hover {
-    border-color: #1cffa0;
-    box-shadow: 0 0 8px rgba(0, 123, 255, 0.2);
+    border-color: var(--color-primary);
 }
 
+.track:focus,
+.radio-group:focus,
 textarea:focus,
 select:focus {
-    border-color: #1cffa0;
+    border-color: var(--color-primary);
     outline: none;
-    box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
 }
 
 #footer {
@@ -107,28 +150,70 @@ select:focus {
 }
 
 #footer a {
-    color: #1cffa0;
+    color: var(--color-primary);
+    filter: brightness(80%);
     text-decoration: none;
 }
 
 #footer a:hover {
-    color: #007BFF;
+    color: var(--color-primary);
+    filter: brightness(100%);
     text-decoration: underline;
+}
+
+.fab {
+    z-index: 10;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    cursor: pointer;
+    padding: 12px;
+    color: white;
+    background-color: var(--color-primary);
+    border-radius: 50px;
+    transition: color 0.3s ease;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    transition: width 0.3s;
+}
+
+.fab svg {
+    fill: white;
+}
+
+.fab:hover::after {
+    content: "Support";
+    margin-left: 8px;
 }
 
 @media (prefers-color-scheme: dark) {
     body {
-        color: #dadada;
-        background: #161616;
+        color: var(--color-dark-text);
+        background: var(--color-dark-background);
     }
 
     textarea,
-    select, .track {
-        background-color: #212121;
-        color: #fafafa;
+    select,
+    .radio-group,
+    .track {
+        background-color: var(--color-dark-background);
+        color: var(--color-dark-text);
+    }
+
+    .radio-group input[type=radio]:checked+label {
+        color: var(--color-dark-background);
     }
 
     .thumb {
-        background-color: #515151;
+        background-color: var(--color-neutral);
+    }
+
+    .fab {
+        color: var(--color-dark-background);
+    }
+
+    .fab svg {
+        fill: var(--color-dark-background);
     }
 }

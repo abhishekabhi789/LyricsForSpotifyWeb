@@ -84,6 +84,14 @@
         </select>
     </div>
     <div class="config-item">
+        <label>Lyrics Alignment</label>
+        <div id="lyrics-alignment-config" class="radio-group">
+            <input type="radio" id="start" name="lyricsAlignment"><label for="start">Left</label><input type="radio"
+                id="center" name="lyricsAlignment" checked><label for="center">Center</label><input type="radio"
+                id="end" name="lyricsAlignment"><label for="end">Right</label>
+        </div>
+    </div>
+    <div class="config-item">
         <label for="enableLogging">Enble Logging:</label>
         <label class="track">
             <input type="checkbox" id="enableLogging" name="enableLogging">
@@ -91,26 +99,39 @@
         </label>
     </div>
     <div class="config-item">
-        <label for="enableCustomStyles">Enable Custom styles</label>
+        <label for="enableCustomStyles">Enable Custom Styles</label>
         <label class="track">
             <input type="checkbox" id="enableCustomStyles" name="enableCustomStyles">
             <div class="thumb"></div>
         </label>
     </div>
     <div class="custom-styles">
-        <label for="passedLyricsStyles">Passed Lyrics styles</label>
+        <label for="allLyricsStyle">All lyrics styles</label>
+        <textarea id="allLyricsStyle" placeholder="CSS styles for all lyrics" spellcheck="false"></textarea>
+    </div>
+    <div class="custom-styles">
+        <label for="passedLyricsStyles">Passed lyrics styles</label>
         <textarea id="passedLyricsStyles" placeholder="CSS styles for passed lyrics" spellcheck="false"></textarea>
     </div>
     <div class="custom-styles">
-        <label for="activeLyricsStyles">Active Lyrics styles</label>
+        <label for="activeLyricsStyles">Active lyrics styles</label>
         <textarea id="activeLyricsStyles" placeholder="CSS styles for active lyrics" spellcheck="false"></textarea>
     </div>
     <div class="custom-styles">
-        <label for="inactiveLyricsStyles">Inactive Lyrics styles</label>
+        <label for="inactiveLyricsStyles">Inactive lyrics styles</label>
         <textarea id="inactiveLyricsStyles" placeholder="CSS styles for inactive lyrics" spellcheck="false"></textarea>
     </div>
     <hr />
     <div id="footer"></div>
+    <a href="https://ko-fi.com/abhishekabhi789" target="_blank">
+        <div class="fab">
+            <svg class=".fab-icon" aria-hidden="true" viewBox="0 0 12 12" version="1.1" width="16" height="16" class="">
+                <path
+                    d="M8.863.505c-1.1015 0-2.223.521-2.863 1.619-.6425-1.103-1.761-1.624-2.8595-1.624-1.5915 0-3.1405 1.0935-3.1405 3.0955 0 2.3305 2.7855 4.7145 6 7.9045 3.215-3.19 6-5.574 6-7.9045 0-2.0055-1.5475-3.0905-3.137-3.0905">
+                </path>
+            </svg>
+        </div>
+    </a>
     <script src="defaultConfigs.js"></script>
     <script src="config.js"></script>
 </body>
