@@ -96,6 +96,13 @@ document.addEventListener('DOMContentLoaded', function () {
             showCustomStyleConfigs(customStylesEnabled);
         });
     });
+    defaultLyricsFontMap.forEach((value,key) =>{
+        const option = document.createElement('option');
+        option.value = value;
+        option.text = key;
+        option.style.fontFamily = value
+        elSettingsCustomFont.appendChild(option)
+    });
 });
 
 function attachFooter() {
