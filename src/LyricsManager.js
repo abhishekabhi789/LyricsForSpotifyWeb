@@ -10,7 +10,7 @@ const headers = new Headers({
 class LyricsManager {
     /** A map to store all the lyrics data for current session with key as trackTitle-artist */
     #lyricsCache = new Map();
-
+    #emptyLine = "♪";
     #INFO_LINE = (() => {
         const infoLine = document.createElement('div');
         infoLine.classList.add(CLASSNAME_INFOLINE);
@@ -45,13 +45,14 @@ class LyricsManager {
             const lyricsData = await response.json();
             if (lyricsData.length > 0) {
                 const lyricsItem = lyricsData.find(it => it.syncedLyrics !== null);
-                if(!lyricsItem){
-                    lyricsItem = lyricsData.find(it=> it.plainLyrics !== null);
+                if (!lyricsItem) {
+                    lyricsItem = lyricsData.find(it => it.plainLyrics !== null);
                 }
                 const lyrics = lyricsItem ? (lyricsItem.syncedLyrics || lyricsItem.plainLyrics) : null;
                 if (lyrics == null) {
-                    console.log("no lyrics found for",trackTitle,artist);
-                    return null};
+                    console.log("no lyrics found for", trackTitle, artist);
+                    return null
+                };
                 const lyricsDiv = this.#lrcToDivs(lyrics);
                 this.#lyricsCache.set(cacheKey, lyricsDiv);
                 return lyricsDiv;
@@ -80,14 +81,14 @@ class LyricsManager {
                 let lyrics = matches[2].trim();
                 lineDiv.classList.add(CLASSNAME_INACTIVE_LYRICS);
                 lineDiv.setAttribute(ATTR_TIMESTAMP, timestamp);
-                lineDiv.innerHTML = (lyrics == "") ? "♪" : lyrics;
+                lineDiv.innerHTML = (lyrics == "") ? this.#emptyLine : lyrics;
                 (function (ts) {
                     lineDiv.onclick = () => changePlayBackPosition(ts);
                 })(timestamp);
                 if (index == 0) {
                     if (timestamp > '00:05') {
                         const firstLine = lineDiv.cloneNode();
-                        firstLine.innerHTML = "♪";
+                        firstLine.innerHTML = this.#emptyLine;
                         firstLine.setAttribute(ATTR_TIMESTAMP, '00:00');
                         lyricDiv.appendChild(firstLine);
                     }
@@ -95,7 +96,7 @@ class LyricsManager {
             } else {
                 // process plain lyrics
                 lineDiv.classList.add(ATTR_BUTTON_LYRICS_ACTIVE);
-                lineDiv.innerHTML = (line == "") ? "♪" : line.trim();
+                lineDiv.innerHTML = (line == "") ? this.#emptyLine : line.trim();
             }
             lyricDiv.appendChild(lineDiv);
         });

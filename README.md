@@ -12,12 +12,12 @@ Chrome extension for Spotify Web to get more lyrics.<br>
 </div>
 
 > [!IMPORTANT]
->  Usage is at own risk/responsibility.
+>  Usage is at your own risk and responsibility.
 > 
-> It's not stable yet and does not guarantee that it will work all the time.
+> It's not yet stable and does not guarantee that it will work all the time.
 
 > [!NOTE]
-> It can only add lyrics while the lyrics button ( :microphone: ) is visible.
+> It can show lyrics only while the lyrics button ( :microphone: ) is visible.
 > 
 > Lyrics in full screen view won't be altered.
 
