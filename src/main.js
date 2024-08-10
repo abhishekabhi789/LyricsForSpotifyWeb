@@ -54,15 +54,28 @@ const playbackObserver = new MutationObserver((mutations) => {
     }
 });
 
-/** observes the lyrics button state */
-const buttonObserver = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-        if (mutation.type == 'attributes') {
-            handleButtonEvent();
-            break;
-        }
+// This observer is disabled since it is not observeing the button attribute changes as needed
+// /** observes the lyrics button state */
+// const buttonObserver = new MutationObserver((mutations) => {
+//     for (const mutation of mutations) {
+//         console.log(mutation)
+//         if (mutation.type == 'attributes') {
+//             handleButtonEvent();
+//             break;
+//         }
+//     }
+// })
+/** This block will be called whenever the address bar URL changes. From there lyrics panel visibility is identified */
+const buttonListener = (e) => {
+    if (e.destination.url.endsWith("/lyrics")) {
+        if (DEBUG) console.log("lyrics view opened");
+        observeNowPlayingWidget();
+    } else {
+        if (DEBUG) console.log("lyrics view closed");
+        detachListener();
     }
-})
+}
+
 /** Starts to observe now playing widget for track change once it's available. */
 function observeNowPlayingWidget() {
     const nowPlayingWidget = selectById(ID_WIDGET_NOW_PLAYING);
@@ -230,18 +243,18 @@ async function pullTrackInfo() {
     }
 }
 
-
-/** Handle the state changes of lyrics button in now playing bar */
-function handleButtonEvent() {
-    const lyricsUiVisible = selectById(ID_BUTTON_LYRICS).getAttribute(ATTR_BUTTON_LYRICS_ACTIVE) == 'true';
-    if (DEBUG) console.log('lyrics UI visible:', lyricsUiVisible);
-    if (lyricsUiVisible) {
-        observeNowPlayingWidget();
-    }
-    else {
-        detachListener(); // stopping extension when lyrics ui closed
-    }
-}
+// disabled since observer fails to monitor the attribute change
+// /** Handle the state changes of lyrics button in now playing bar */
+// function handleButtonEvent() {
+//     const lyricsUiVisible = selectById(ID_BUTTON_LYRICS).getAttribute(ATTR_BUTTON_LYRICS_ACTIVE) == 'true';
+//     if (DEBUG) console.log('lyrics UI visible:', lyricsUiVisible);
+//     if (lyricsUiVisible) {
+//         observeNowPlayingWidget();
+//     }
+//     else {
+//         detachListener(); // stopping extension when lyrics ui closed
+//     }
+// }
 
 /** Disconnects all observers */
 function detachListener() {
@@ -254,8 +267,10 @@ function init() {
     const lyricsButton = selectById(ID_BUTTON_LYRICS);
     if (lyricsButton) {
         if (DEBUG) console.log('starting observers');
-        buttonObserver.disconnect(); // disconnecting previous, if any
-        buttonObserver.observe(lyricsButton, { attributes: true, attributeFilter: [ATTR_BUTTON_LYRICS_ACTIVE], childList: false });
+        // buttonObserver.disconnect(); // disconnecting previous, if any
+        // buttonObserver.observe(lyricsButton, { attributes: true,attributeFilter: [ATTR_BUTTON_LYRICS_ACTIVE], childList: tr });
+        navigation.removeEventListener("navigate", buttonListener);
+        navigation.addEventListener("navigate", buttonListener);
         observeNowPlayingWidget();
     }
     else {
@@ -275,7 +290,8 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
                 console.log('Stopping plugin services')
                 detachListener();
                 widgetObserver.disconnect();
-                buttonObserver.disconnect();
+                // buttonObserver.disconnect();
+                navigation.removeEventListener("navigate", buttonListener);
                 showSpotifyLyricsUi();
             }
         }
@@ -355,7 +371,7 @@ function refreshTheme() {
     if (DEBUG) console.log('refreshing theme');
     const currentStyle = document.getElementById(CUSTOM_STYLE_ELEMENT_ID);
     chrome.storage.sync.get(['removeBackground', 'lyricsAlignment', 'lyricsFont', 'enableCustomStyles', 'allLyricsStyle', 'passedLyricsStyles', 'activeLyricsStyles', 'inactiveLyricsStyles'], function (results) {
-        if (DEBUG) console.log('configs', 'enableCustomStyles', 'allLyricsStyle', results.allLyricsStyle, results.enableCustomStyles, 'passedLyricsStyles', results.passedLyricsStyles, 'activeLyricsStyles', results.activeLyricsStyles, 'inactiveLyricsStyles', results.inactiveLyricsStyles);
+        if (DEBUG) console.log('configs', 'enableCustomStyles', 'allLyricsStyle', results.allLyricsStyle, 'enableCustomStyles', results.enableCustomStyles, 'passedLyricsStyles', results.passedLyricsStyles, 'activeLyricsStyles', results.activeLyricsStyles, 'inactiveLyricsStyles', results.inactiveLyricsStyles);
         const lyricsAlignment = results.lyricsAlignment != undefined ? results.lyricsAlignment : 'center';
         const lyricsFont = results.lyricsFont != undefined ? results.lyricsFont : 'Arial sans';
         const bgColor = results.removeBackground == true ? 'transparent' : 'var(--lyrics-color-background)';

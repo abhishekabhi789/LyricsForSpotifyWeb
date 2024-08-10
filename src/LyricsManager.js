@@ -44,7 +44,7 @@ class LyricsManager {
             }
             const lyricsData = await response.json();
             if (lyricsData.length > 0) {
-                const lyricsItem = lyricsData.find(it => it.syncedLyrics !== null);
+                var lyricsItem = lyricsData.find(it => it.syncedLyrics !== null);
                 if (!lyricsItem) {
                     lyricsItem = lyricsData.find(it => it.plainLyrics !== null);
                 }
