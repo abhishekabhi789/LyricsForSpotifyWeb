@@ -1,5 +1,5 @@
 var DEBUG = false;
-
+var keepLyricsBySpotify = true;
 // SPOTIFY CONSTANTS
 const ID_BUTTON_LYRICS = 'lyrics-button';
 const ID_TITLE = 'context-item-info-title';
@@ -11,6 +11,7 @@ const ID_PLAYBACK_DURATION = 'playback-duration';
 const CSS_ID = 'data-testid';
 const ATTR_BUTTON_LYRICS_ACTIVE = "data-active";
 const SF_CLASSNAME_LYRICS_CONTAINER = 'FUYNhisXTCmbzt9IDxnT';
+const ID_STOCK_LYRICS_LINE = "fullscreen-lyric";
 
 // EXTENSION CONSTANTS
 /** Class name of the custom lyrics div. */
@@ -69,10 +70,22 @@ const playbackObserver = new MutationObserver((mutations) => {
 const buttonListener = (e) => {
     if (e.destination.url.endsWith("/lyrics")) {
         if (DEBUG) console.log("lyrics view opened");
-        observeNowPlayingWidget();
+        window.setTimeout(observeNowPlayingWidget, 1000);
     } else {
         if (DEBUG) console.log("lyrics view closed");
         detachListener();
+    }
+}
+
+/** Function that checks if the current playing track has lyrics provided by spotify. */
+function hasStockLyrics() {
+    if (selectById(ID_BUTTON_LYRICS).getAttribute(ATTR_BUTTON_LYRICS_ACTIVE) == 'true') {
+        const stockLyricsContainer = document.querySelector(`.${SF_CLASSNAME_LYRICS_CONTAINER}`)
+        const lyrics = stockLyricsContainer.querySelectorAll(`div[${CSS_ID}="${ID_STOCK_LYRICS_LINE}"]`)
+        return lyrics ? lyrics.length > 0 : false
+    } else {
+        if (DEBUG) console.log("lyrics window not opened")
+        return false
     }
 }
 
@@ -80,8 +93,8 @@ const buttonListener = (e) => {
 function observeNowPlayingWidget() {
     const nowPlayingWidget = selectById(ID_WIDGET_NOW_PLAYING);
     if (nowPlayingWidget) {
-        pullTrackInfo(); // trying to fetch and show lyrics, the observer will reset the flow  and lands here for next call too.
-        widgetObserver.observe(nowPlayingWidget, { attributes: true, characterData: true, childList: true })
+        widgetObserver.observe(nowPlayingWidget, { attributes: true, characterData: true, childList: true });
+        pullTrackInfo();
     }
     else {
         if (DEBUG) console.log('now playing widget not found');
@@ -232,6 +245,22 @@ function replaceLyrics(lyricDivs) {
 
 /** Preaparing trackInfo for network request */
 async function pullTrackInfo() {
+    if (keepLyricsBySpotify) {
+        const lyricsButton = selectById(ID_BUTTON_LYRICS);
+        if (lyricsButton.getAttribute(ATTR_BUTTON_LYRICS_ACTIVE) == 'true') {
+            if (hasStockLyrics()) {
+                if (DEBUG) console.log("Lyrics are available, won't be removed");
+                return;
+            } else {
+                if (DEBUG) console.log("stock lyrics not available, trying to add custom lyrics");
+            }
+        } else {
+            if (DEBUG) console.log("lyrics UI not visible, aborting task");
+            return;
+        }
+    } else {
+        if (DEBUG) console.log("replacing with custom lyrics UI");
+    }
     const trackTitle = selectById(ID_TITLE).textContent;
     const artist = selectById(ID_ARTIST).textContent;
     if (trackTitle && artist) {
@@ -268,7 +297,7 @@ function init() {
     if (lyricsButton) {
         if (DEBUG) console.log('starting observers');
         // buttonObserver.disconnect(); // disconnecting previous, if any
-        // buttonObserver.observe(lyricsButton, { attributes: true,attributeFilter: [ATTR_BUTTON_LYRICS_ACTIVE], childList: tr });
+        // buttonObserver.observe(lyricsButton, { attributes: true,attributeFilter: [ATTR_BUTTON_LYRICS_ACTIVE], childList: true });
         navigation.removeEventListener("navigate", buttonListener);
         navigation.addEventListener("navigate", buttonListener);
         observeNowPlayingWidget();
@@ -299,6 +328,19 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
             const bgColor = changes.removeBackground.newValue == true ? 'transparent' : 'var(--lyrics-color-background)';
             if (DEBUG) console.log('changing background to:', bgColor);
             document.querySelector(`.${CLASSNAME_LYRICS_CONTAINER}`).style.backgroundColor = bgColor;
+        }
+        if (changes.keepLyricsBySpotify != undefined) {
+            keepLyricsBySpotify = changes.keepLyricsBySpotify.newValue;
+            if (keepLyricsBySpotify == true) {
+                if (DEBUG) console.log("stock lyrics will be shown");
+                if (hasStockLyrics()) {
+                    detachListener();
+                    showSpotifyLyricsUi();
+                }
+            } else {
+                if (DEBUG) console.log("stock lyrics will be replaced");
+                pullTrackInfo();
+            }
         }
         if (changes.lyricsFont != undefined) {
             if (DEBUG) console.log('changing font:', changes.lyricsFont.newValue);

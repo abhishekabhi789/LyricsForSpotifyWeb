@@ -27,11 +27,12 @@ function showCustomStyleConfigs(enabled) {
 document.addEventListener('DOMContentLoaded', function () {
     const elSettingsRemoveBg = document.getElementById('removeBackground');
     const elSettingsCustomFont = document.getElementById('lyricsFont');
+    const elSettingsKeepStockLyrics = document.getElementById('keepLyricsBySpotify');
     const elSettingsEnableLogging = document.getElementById('enableLogging');
     const elSettingsEnableExtension = document.getElementById('enableExtension');
     const elSettingsCustomStyles = document.getElementById('enableCustomStyles');
 
-    chrome.storage.sync.get(['removeBackground', 'lyricsFont', 'lyricsAlignment', 'enableLogging', 'enableExtension', 'enableCustomStyles'], function (result) {
+    chrome.storage.sync.get(['removeBackground', 'lyricsFont', 'keepLyricsBySpotify', 'lyricsAlignment', 'enableLogging', 'enableExtension', 'enableCustomStyles'], function (result) {
         if (result.enableExtension != undefined) {
             elSettingsEnableExtension.checked = result.enableExtension;
         } else {
@@ -41,6 +42,11 @@ document.addEventListener('DOMContentLoaded', function () {
             elSettingsRemoveBg.checked = result.removeBackground;
         } else {
             elSettingsRemoveBg.checked = false;
+        }
+        if (result.keepLyricsBySpotify != undefined) {
+            elSettingsKeepStockLyrics.checked = result.keepLyricsBySpotify;
+        } else {
+            elSettingsKeepStockLyrics.checked = true; //default value, to reduce traffic
         }
         if (result.lyricsFont != undefined) {
             elSettingsCustomFont.value = result.lyricsFont;
@@ -73,6 +79,11 @@ document.addEventListener('DOMContentLoaded', function () {
             console.log('Remove background config updated to ' + elSettingsRemoveBg.checked);
         });
     });
+    elSettingsKeepStockLyrics.addEventListener('change', function () {
+        chrome.storage.sync.set({ keepLyricsBySpotify: elSettingsKeepStockLyrics.checked }, function () {
+            console.log('Keep stock lyrics config updated to ' + elSettingsKeepStockLyrics.checked);
+        });
+    });
     elSettingsCustomFont.addEventListener('change', function () {
         chrome.storage.sync.set({ lyricsFont: elSettingsCustomFont.value }, function () {
             console.log('Custom font config updated to ' + elSettingsCustomFont.value);
@@ -96,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function () {
             showCustomStyleConfigs(customStylesEnabled);
         });
     });
-    defaultLyricsFontMap.forEach((value,key) =>{
+    defaultLyricsFontMap.forEach((value, key) => {
         const option = document.createElement('option');
         option.value = value;
         option.text = key;
