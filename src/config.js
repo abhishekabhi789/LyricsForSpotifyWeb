@@ -25,14 +25,15 @@ function showCustomStyleConfigs(enabled) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    const elSettingsRemoveBg = document.getElementById('removeBackground');
-    const elSettingsCustomFont = document.getElementById('lyricsFont');
-    const elSettingsKeepStockLyrics = document.getElementById('keepLyricsBySpotify');
-    const elSettingsEnableLogging = document.getElementById('enableLogging');
     const elSettingsEnableExtension = document.getElementById('enableExtension');
+    const elSettingsRemoveBg = document.getElementById('removeBackground');
+    const elSettingsKeepStockLyrics = document.getElementById('keepLyricsBySpotify');
+    const elSettingsCustomFont = document.getElementById('lyricsFont');
+    const elSettingsEnableLogging = document.getElementById('enableLogging');
+    const elSettingsOverrideStockTheme = document.getElementById('overrideStockTheme');
     const elSettingsCustomStyles = document.getElementById('enableCustomStyles');
 
-    chrome.storage.sync.get(['removeBackground', 'lyricsFont', 'keepLyricsBySpotify', 'lyricsAlignment', 'enableLogging', 'enableExtension', 'enableCustomStyles'], function (result) {
+    chrome.storage.sync.get(['enableExtension', 'removeBackground', 'keepLyricsBySpotify', 'lyricsFont', 'lyricsAlignment', 'enableLogging', 'overrideStockTheme', 'enableCustomStyles'], function (result) {
         if (result.enableExtension != undefined) {
             elSettingsEnableExtension.checked = result.enableExtension;
         } else {
@@ -58,6 +59,11 @@ document.addEventListener('DOMContentLoaded', function () {
             elSettingsEnableLogging.checked = result.enableLogging;
         } else {
             elSettingsEnableLogging.checked = false;
+        }
+        if (result.overrideStockTheme != undefined) {
+            elSettingsOverrideStockTheme.checked = result.overrideStockTheme;
+        } else {
+            elSettingsOverrideStockTheme.checked = false;
         }
         if (result.enableCustomStyles != undefined) {
             const enabled = result.enableCustomStyles;
@@ -98,6 +104,11 @@ document.addEventListener('DOMContentLoaded', function () {
     elSettingsEnableLogging.addEventListener('change', function () {
         chrome.storage.sync.set({ enableLogging: elSettingsEnableLogging.checked }, function () {
             console.log('Enable Logging config updated to ' + elSettingsEnableLogging.checked);
+        });
+    });
+    elSettingsOverrideStockTheme.addEventListener('change', function () {
+        chrome.storage.sync.set({ overrideStockTheme: elSettingsOverrideStockTheme.checked }, function () {
+            console.log('Override stock theme config updated to ' + elSettingsOverrideStockTheme.checked);
         });
     });
     elSettingsCustomStyles.addEventListener('change', function () {

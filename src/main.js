@@ -12,6 +12,9 @@ const CSS_ID = 'data-testid';
 const ATTR_BUTTON_LYRICS_ACTIVE = "data-active";
 const SF_CLASSNAME_LYRICS_CONTAINER = 'FUYNhisXTCmbzt9IDxnT';
 const ID_STOCK_LYRICS_LINE = "fullscreen-lyric";
+const SF_CLASSNAME_LYRICS_SUB_CONTAINER = 'nw6rbs8R08fpPn7RWW2w';
+const SF_CLASSNAME_LYRICS_LINE = 'nw6rbs8R08fpPn7RWW2w';
+const SF_CLASSNAME_LYRICS_PASSED = 'aeO5D7ulxy19q4qNBrkk';
 
 // EXTENSION CONSTANTS
 /** Class name of the custom lyrics div. */
@@ -355,6 +358,9 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
             console.log('Debugging', value ? "enabled" : "disabled");
             DEBUG = value;
         }
+        if (changes.overrideStockTheme != undefined) {
+            refreshTheme();
+        }
         if (changes.enableCustomStyles != undefined) {
             //refreshes when enable or disable custom theme checkbox
             refreshTheme();
@@ -367,16 +373,16 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
 });
 
 /** applying styles for the custom lyrics UI. */
-function applyStyling(bgColor, lyricsAlignment, lyricsFont, allLyricsStyle, passedLStyles, activeLStyles, inactiveLStyles) {
+function applyStyling(overrideStockTheme, bgColor, lyricsAlignment, lyricsFont, allLyricsStyle, passedLStyles, activeLStyles, inactiveLStyles) {
     const style = document.createElement('style');
     style.id = CUSTOM_STYLE_ELEMENT_ID;
     style.textContent = `
         :root{
             --lyrics-font: ${lyricsFont};
         }
-        .${CLASSNAME_LYRICS_CONTAINER}{
+        .${CLASSNAME_LYRICS_CONTAINER} ${overrideStockTheme ? ', .' + SF_CLASSNAME_LYRICS_SUB_CONTAINER : ''} {
             text-align: ${lyricsAlignment};
-            padding: 64px;
+            ${overrideStockTheme ? '' : 'padding: 64px'};
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -385,10 +391,10 @@ function applyStyling(bgColor, lyricsAlignment, lyricsFont, allLyricsStyle, pass
             font-family: var(--lyrics-font);
             background-color: ${bgColor};
         }
-        .${CLASSNAME_LYRICS_ADDED}{
+        .${CLASSNAME_LYRICS_ADDED} ${overrideStockTheme ? ', .' + SF_CLASSNAME_LYRICS_LINE : ''}{
            ${allLyricsStyle}
         }
-        .${CLASSNAME_LYRICS_PASSED}{
+        .${CLASSNAME_LYRICS_PASSED} ${overrideStockTheme ? ', .' + SF_CLASSNAME_LYRICS_PASSED : ''}{
             ${passedLStyles}
         }
         .${CLASSNAME_INACTIVE_LYRICS}{
@@ -412,24 +418,26 @@ function applyStyling(bgColor, lyricsAlignment, lyricsFont, allLyricsStyle, pass
 function refreshTheme() {
     if (DEBUG) console.log('refreshing theme');
     const currentStyle = document.getElementById(CUSTOM_STYLE_ELEMENT_ID);
-    chrome.storage.sync.get(['removeBackground', 'lyricsAlignment', 'lyricsFont', 'enableCustomStyles', 'allLyricsStyle', 'passedLyricsStyles', 'activeLyricsStyles', 'inactiveLyricsStyles'], function (results) {
-        if (DEBUG) console.log('configs', 'enableCustomStyles', 'allLyricsStyle', results.allLyricsStyle, 'enableCustomStyles', results.enableCustomStyles, 'passedLyricsStyles', results.passedLyricsStyles, 'activeLyricsStyles', results.activeLyricsStyles, 'inactiveLyricsStyles', results.inactiveLyricsStyles);
+    chrome.storage.sync.get(['removeBackground', 'lyricsAlignment', 'lyricsFont', 'overrideStockTheme', 'enableCustomStyles', 'allLyricsStyle', 'passedLyricsStyles', 'activeLyricsStyles', 'inactiveLyricsStyles'], function (results) {
+        if (DEBUG) console.log('configs', 'enableCustomStyles', results.enableCustomStyles, 'overrideStockTheme', results.overrideStockTheme);
         const lyricsAlignment = results.lyricsAlignment != undefined ? results.lyricsAlignment : 'center';
         const lyricsFont = results.lyricsFont != undefined ? results.lyricsFont : 'Arial sans';
+        const overrideStockTheme = results.overrideStockTheme != undefined ? results.overrideStockTheme : false;
         const bgColor = results.removeBackground == true ? 'transparent' : 'var(--lyrics-color-background)';
         if (DEBUG) console.log('Configs:', 'font', lyricsFont, '| color', bgColor, '| alignment', lyricsAlignment);
         if (results.enableCustomStyles == true) {
+            if (DEBUG) console.log('allLyricsStyle', results.allLyricsStyle, 'enableCustomStyles', results.enableCustomStyles, 'passedLyricsStyles', results.passedLyricsStyles, 'activeLyricsStyles', results.activeLyricsStyles, 'inactiveLyricsStyles', results.inactiveLyricsStyles);
             if (DEBUG) console.log('adding custom styles');
             const allLyricsStyle = results.allLyricsStyle != undefined ? results.allLyricsStyle : allLyricsDefaultStyle;
             const passedLStyles = results.passedLyricsStyles != undefined ? results.passedLyricsStyles : passedLDefaultStyles;
             const activeLStyles = results.activeLyricsStyles != undefined ? results.activeLyricsStyles : activeLDefaultStyles;
             const inactiveLStyles = results.inactiveLyricsStyles != undefined ? results.inactiveLyricsStyles : inactiveLDefaultStyles;
             if (currentStyle != undefined) { currentStyle.remove(); }
-            applyStyling(bgColor, lyricsAlignment, lyricsFont, allLyricsStyle, passedLStyles, activeLStyles, inactiveLStyles);
+            applyStyling(overrideStockTheme, bgColor, lyricsAlignment, lyricsFont, allLyricsStyle, passedLStyles, activeLStyles, inactiveLStyles);
         } else {
             if (DEBUG) console.log('removing custom styles');
             if (currentStyle != undefined) { currentStyle.remove(); }
-            applyStyling(bgColor, lyricsAlignment, lyricsFont, allLyricsDefaultStyle, passedLDefaultStyles, activeLDefaultStyles, inactiveLDefaultStyles);
+            applyStyling(overrideStockTheme, bgColor, lyricsAlignment, lyricsFont, allLyricsDefaultStyle, passedLDefaultStyles, activeLDefaultStyles, inactiveLDefaultStyles);
         }
     });
 }

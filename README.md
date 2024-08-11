@@ -17,8 +17,6 @@ Chrome extension for Spotify Web to get more lyrics.<br>
 > It's not yet stable and does not guarantee that it will work all the time.
 
 > [!NOTE]
-> It can show lyrics only while the lyrics button ( :microphone: ) is visible.
-> 
 > Lyrics in full screen view won't be altered.
 
 
