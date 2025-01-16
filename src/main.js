@@ -1,5 +1,5 @@
 var DEBUG = false;
-var keepLyricsBySpotify = true;
+var overrideSpotifyLyrics = false;
 // SPOTIFY CONSTANTS
 const ID_BUTTON_LYRICS = 'lyrics-button';
 const ID_TITLE = 'context-item-info-title';
@@ -9,7 +9,8 @@ const ID_PLAYBACK_POSITION = 'playback-position';
 const ID_PLAYBACK_PROGRESSBAR = 'progress-bar';
 const ID_PLAYBACK_DURATION = 'playback-duration';
 const CSS_ID = 'data-testid';
-const ATTR_BUTTON_LYRICS_ACTIVE = "data-active";
+const ATTR_LYRICS_BUTTON_LYRICS_ACTIVE = "data-active";
+const ATTR_LYRICS_BUTTON_DISABLED = "disabled";
 const SF_CLASSNAME_LYRICS_CONTAINER = 'FUYNhisXTCmbzt9IDxnT';
 const ID_STOCK_LYRICS_LINE = "fullscreen-lyric";
 const SF_CLASSNAME_LYRICS_SUB_CONTAINER = 'nw6rbs8R08fpPn7RWW2w';
@@ -39,6 +40,7 @@ const widgetObserver = new MutationObserver((mutations) => {
                 if (DEBUG) console.log('track changed');
                 detachListener();
                 init();
+                // reattachLyricsButtonDisabledStateObserver();
                 break;
                 //the observer resets the code flow.
             }
@@ -57,6 +59,21 @@ const playbackObserver = new MutationObserver((mutations) => {
         }
     }
 });
+/** Observes the lyrics button for it's disabled state */
+const lyricsButtonDisableStateobserver = new MutationObserver((mutationsList) => {
+    mutationsList.forEach((mutation) => {
+        if (mutation.attributeName == "aria-label") {
+            const lyricsButton = selectById(ID_BUTTON_LYRICS);
+            if (lyricsButton.hasAttribute(ATTR_LYRICS_BUTTON_DISABLED)) {
+                lyricsButton.addEventListener('click', handleLyricsButtonDisabledStateClick);
+                mutation.target.disabled = false
+            } else {
+                lyricsButton.removeEventListener('click', handleLyricsButtonDisabledStateClick);
+            }
+        }
+    });
+});
+
 
 // This observer is disabled since it is not observeing the button attribute changes as needed
 // /** observes the lyrics button state */
@@ -69,6 +86,12 @@ const playbackObserver = new MutationObserver((mutations) => {
 //         }
 //     }
 // })
+
+/** This will navigate the lyrics page */
+const handleLyricsButtonDisabledStateClick = () => {
+    if (DEBUG) console.log('lyrics button clicked');
+    window.history.pushState({}, '', '/lyrics');
+}
 /** This block will be called whenever the address bar URL changes. From there lyrics panel visibility is identified */
 const buttonListener = (e) => {
     if (e.destination.url.endsWith("/lyrics")) {
@@ -80,9 +103,20 @@ const buttonListener = (e) => {
     }
 }
 
+// function reattachLyricsButtonDisabledStateObserver() {
+//     const lyricsButton = selectById(ID_BUTTON_LYRICS);
+//     if (lyricsButton) {
+//         // lyricsButtonDisableStateobserver.disconnect();
+//         lyricsButtonDisableStateobserver.observe(lyricsButton, { attributes: true, attributeFilter: [ATTR_LYRICS_BUTTON_DISABLED] });
+//     } else {
+//         if (DEBUG) console.log("couldn't find lyrics button while trying to attach observer")
+//     }
+// }
+
+
 /** Function that checks if the current playing track has lyrics provided by spotify. */
 function hasStockLyrics() {
-    if (selectById(ID_BUTTON_LYRICS).getAttribute(ATTR_BUTTON_LYRICS_ACTIVE) == 'true') {
+    if (selectById(ID_BUTTON_LYRICS).getAttribute(ATTR_LYRICS_BUTTON_LYRICS_ACTIVE) == 'true') {
         const stockLyricsContainer = document.querySelector(`.${SF_CLASSNAME_LYRICS_CONTAINER}`)
         const lyrics = stockLyricsContainer.querySelectorAll(`div[${CSS_ID}="${ID_STOCK_LYRICS_LINE}"]`)
         return lyrics ? lyrics.length > 0 : false
@@ -168,7 +202,7 @@ function hideSpotifyLyricsUi(mainContent) {
     //remove any previously set lyrics.
     const oldLyrics = mainContent.querySelector(`.${CLASSNAME_LYRICS_CONTAINER}`);
     if (oldLyrics) {
-        if (DEBUG) console.log('removing previous lyrics')
+        if (DEBUG) console.log('cleaning custom lyrics lyrics')
         oldLyrics.remove();
     }
     // hiding all other children of mainContent. it shouldn't be removed, spotify need these for next track
@@ -248,21 +282,24 @@ function replaceLyrics(lyricDivs) {
 
 /** Preaparing trackInfo for network request */
 async function pullTrackInfo() {
-    if (keepLyricsBySpotify) {
-        const lyricsButton = selectById(ID_BUTTON_LYRICS);
-        if (lyricsButton.getAttribute(ATTR_BUTTON_LYRICS_ACTIVE) == 'true') {
-            if (hasStockLyrics()) {
-                if (DEBUG) console.log("Lyrics are available, won't be removed");
-                return;
-            } else {
-                if (DEBUG) console.log("stock lyrics not available, trying to add custom lyrics");
-            }
-        } else {
-            if (DEBUG) console.log("lyrics UI not visible, aborting task");
-            return;
-        }
-    } else {
+    const lyricsButton = selectById(ID_BUTTON_LYRICS);
+    if (!lyricsButton) {
+        console.error('failed to find lyrics button')
+        return;
+    }
+    if (lyricsButton.getAttribute(ATTR_LYRICS_BUTTON_LYRICS_ACTIVE) != 'true') {
+        if (DEBUG) console.log("lyrics UI not visible, lyrics won't be altered");
+        return;
+    }
+    if (overrideSpotifyLyrics) {
         if (DEBUG) console.log("replacing with custom lyrics UI");
+    } else {
+        if (hasStockLyrics()) {
+            if (DEBUG) console.log("Lyrics are available, won't be replaced");
+            return;
+        } else {
+            if (DEBUG) console.log("Lyrics not available, trying to add custom lyrics");
+        }
     }
     const trackTitle = selectById(ID_TITLE).textContent;
     const artist = selectById(ID_ARTIST).textContent;
@@ -271,7 +308,10 @@ async function pullTrackInfo() {
         if (lyricsDiv != null) {
             replaceLyrics(lyricsDiv);
         }
-        else showSpotifyLyricsUi();
+        else {
+            console.error('failed to get processed lyrics')
+            showSpotifyLyricsUi();
+        }
     }
 }
 
@@ -304,6 +344,9 @@ function init() {
         navigation.removeEventListener("navigate", buttonListener);
         navigation.addEventListener("navigate", buttonListener);
         observeNowPlayingWidget();
+        // lyricsButtonDisableStateobserver.disconnect();
+        lyricsButtonDisableStateobserver.observe(lyricsButton, { attributes: true, attributeFilter: ["aria-label"] });
+
     }
     else {
         if (DEBUG) console.log('lyrics button not found');
@@ -332,17 +375,17 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
             if (DEBUG) console.log('changing background to:', bgColor);
             document.querySelector(`.${CLASSNAME_LYRICS_CONTAINER}`).style.backgroundColor = bgColor;
         }
-        if (changes.keepLyricsBySpotify != undefined) {
-            keepLyricsBySpotify = changes.keepLyricsBySpotify.newValue;
-            if (keepLyricsBySpotify == true) {
+        if (changes.overrideSpotifyLyrics != undefined) {
+            overrideSpotifyLyrics = changes.overrideSpotifyLyrics.newValue;
+            if (overrideSpotifyLyrics == true) {
+                if (DEBUG) console.log("stock lyrics will be replaced");
+                pullTrackInfo();
+            } else {
                 if (DEBUG) console.log("stock lyrics will be shown");
                 if (hasStockLyrics()) {
                     detachListener();
                     showSpotifyLyricsUi();
                 }
-            } else {
-                if (DEBUG) console.log("stock lyrics will be replaced");
-                pullTrackInfo();
             }
         }
         if (changes.lyricsFont != undefined) {
@@ -418,13 +461,14 @@ function applyStyling(overrideStockTheme, bgColor, lyricsAlignment, lyricsFont, 
 function refreshTheme() {
     if (DEBUG) console.log('refreshing theme');
     const currentStyle = document.getElementById(CUSTOM_STYLE_ELEMENT_ID);
-    chrome.storage.sync.get(['removeBackground', 'lyricsAlignment', 'lyricsFont', 'overrideStockTheme', 'enableCustomStyles', 'allLyricsStyle', 'passedLyricsStyles', 'activeLyricsStyles', 'inactiveLyricsStyles'], function (results) {
+    chrome.storage.sync.get(['removeBackground', 'overrideSpotifyLyrics', 'lyricsAlignment', 'lyricsFont', 'overrideStockTheme', 'enableCustomStyles', 'allLyricsStyle', 'passedLyricsStyles', 'activeLyricsStyles', 'inactiveLyricsStyles'], function (results) {
         if (DEBUG) console.log('configs', 'enableCustomStyles', results.enableCustomStyles, 'overrideStockTheme', results.overrideStockTheme);
         const lyricsAlignment = results.lyricsAlignment != undefined ? results.lyricsAlignment : 'center';
         const lyricsFont = results.lyricsFont != undefined ? results.lyricsFont : 'Arial sans';
         const overrideStockTheme = results.overrideStockTheme != undefined ? results.overrideStockTheme : false;
         const bgColor = results.removeBackground == true ? 'transparent' : 'var(--lyrics-color-background)';
-        if (DEBUG) console.log('Configs:', 'font', lyricsFont, '| color', bgColor, '| alignment', lyricsAlignment);
+        overrideSpotifyLyrics = results.overrideSpotifyLyrics != undefined ? results.overrideSpotifyLyrics : false;
+        if (DEBUG) console.log('Configs:', 'font', lyricsFont, '| color', bgColor, '| alignment', lyricsAlignment, '| overrideSpotifyLyrics', overrideSpotifyLyrics);
         if (results.enableCustomStyles == true) {
             if (DEBUG) console.log('allLyricsStyle', results.allLyricsStyle, 'enableCustomStyles', results.enableCustomStyles, 'passedLyricsStyles', results.passedLyricsStyles, 'activeLyricsStyles', results.activeLyricsStyles, 'inactiveLyricsStyles', results.inactiveLyricsStyles);
             if (DEBUG) console.log('adding custom styles');
@@ -448,6 +492,7 @@ window.addEventListener('load', function () {
         const extensionEnabled = results.enableExtension == false ? false : true; //if undefined, enable extension
         if (extensionEnabled) {
             init();
+            // reattachLyricsButtonDisabledStateObserver();
             refreshTheme();
             console.log('extension loaded');
         }

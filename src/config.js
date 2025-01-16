@@ -27,13 +27,13 @@ function showCustomStyleConfigs(enabled) {
 document.addEventListener('DOMContentLoaded', function () {
     const elSettingsEnableExtension = document.getElementById('enableExtension');
     const elSettingsRemoveBg = document.getElementById('removeBackground');
-    const elSettingsKeepStockLyrics = document.getElementById('keepLyricsBySpotify');
+    const elSettingsOverrideSpotifyLyrics = document.getElementById('overrideSpotifyLyrics');
     const elSettingsCustomFont = document.getElementById('lyricsFont');
     const elSettingsEnableLogging = document.getElementById('enableLogging');
     const elSettingsOverrideStockTheme = document.getElementById('overrideStockTheme');
     const elSettingsCustomStyles = document.getElementById('enableCustomStyles');
 
-    chrome.storage.sync.get(['enableExtension', 'removeBackground', 'keepLyricsBySpotify', 'lyricsFont', 'lyricsAlignment', 'enableLogging', 'overrideStockTheme', 'enableCustomStyles'], function (result) {
+    chrome.storage.sync.get(['enableExtension', 'removeBackground', 'overrideSpotifyLyrics', 'lyricsFont', 'lyricsAlignment', 'enableLogging', 'overrideStockTheme', 'enableCustomStyles'], function (result) {
         if (result.enableExtension != undefined) {
             elSettingsEnableExtension.checked = result.enableExtension;
         } else {
@@ -44,10 +44,10 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             elSettingsRemoveBg.checked = false;
         }
-        if (result.keepLyricsBySpotify != undefined) {
-            elSettingsKeepStockLyrics.checked = result.keepLyricsBySpotify;
+        if (result.overrideSpotifyLyrics != undefined) {
+            elSettingsOverrideSpotifyLyrics.checked = result.overrideSpotifyLyrics;
         } else {
-            elSettingsKeepStockLyrics.checked = true; //default value, to reduce traffic
+            elSettingsOverrideSpotifyLyrics.checked = true; //default value, to reduce traffic
         }
         if (result.lyricsFont != undefined) {
             elSettingsCustomFont.value = result.lyricsFont;
@@ -85,9 +85,9 @@ document.addEventListener('DOMContentLoaded', function () {
             console.log('Remove background config updated to ' + elSettingsRemoveBg.checked);
         });
     });
-    elSettingsKeepStockLyrics.addEventListener('change', function () {
-        chrome.storage.sync.set({ keepLyricsBySpotify: elSettingsKeepStockLyrics.checked }, function () {
-            console.log('Keep stock lyrics config updated to ' + elSettingsKeepStockLyrics.checked);
+    elSettingsOverrideSpotifyLyrics.addEventListener('change', function () {
+        chrome.storage.sync.set({ overrideSpotifyLyrics: elSettingsOverrideSpotifyLyrics.checked }, function () {
+            console.log('Keep stock lyrics config updated to ' + elSettingsOverrideSpotifyLyrics.checked);
         });
     });
     elSettingsCustomFont.addEventListener('change', function () {
