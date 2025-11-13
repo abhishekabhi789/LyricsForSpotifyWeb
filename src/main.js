@@ -11,21 +11,25 @@ const ID_PLAYBACK_DURATION = 'playback-duration';
 const CSS_ID = 'data-testid';
 const ATTR_LYRICS_BUTTON_LYRICS_ACTIVE = "data-active";
 const ATTR_LYRICS_BUTTON_DISABLED = "disabled";
-const SF_CLASSNAME_LYRICS_CONTAINER = 'FUYNhisXTCmbzt9IDxnT';
-const ID_STOCK_LYRICS_LINE = "fullscreen-lyric";
-const SF_CLASSNAME_LYRICS_SUB_CONTAINER = 'nw6rbs8R08fpPn7RWW2w';
-const SF_CLASSNAME_LYRICS_LINE = 'nw6rbs8R08fpPn7RWW2w';
-const SF_CLASSNAME_LYRICS_PASSED = 'aeO5D7ulxy19q4qNBrkk';
+/**The parent container which holds all lyrics related elements.*/
+const SF_CLASSNAME_LYRICS_MAIN_CONTAINER = 'lofIAg8Ixko3mfBrbfej';
+const ID_STOCK_LYRICS_LINE = "lyrics-line";
+/**First level parent container which holds only lyrics lines. */
+const SF_CLASSNAME_LYRICS_SUB_CONTAINER = 't_dtt9KL1wnNRvRO_y5L';
+const SF_CLASSNAME_LYRICS_LINE = 'o69qODXrbOkf6Tv7fa51';
+const SF_CLASSNAME_LYRICS_PASSED = 'Plu0zvuRv7kOQwsQ02cC';
+const SF_CLASSNAME_LYRICS_ACTIVE = '_gZrl2ExJwyxPy1pEUG2';
+const SF_CLASSNAME_LYRICS_UPCOMING = ' PSyA4iign083ZV6vOqPj';
 
 // EXTENSION CONSTANTS
 /** Class name of the custom lyrics div. */
-const CLASSNAME_LYRICS_CONTAINER = 'lyrics-container';
+const CLASSNAME_CUSTOM_LYRICS_CONTAINER = 'lyrics-container';
 const CUSTOM_STYLE_ELEMENT_ID = 'custom-lyrics-styles';
 /** Class name of the custom lyrics line div */
 const CLASSNAME_LYRICS_ADDED = 'added-lyrics';
 const CLASSNAME_LYRICS_PASSED = 'passed-lyrics';
 const CLASSNAME_ACTIVE_LYRICS = 'active-lyrics';
-const CLASSNAME_INACTIVE_LYRICS = 'inactive-lyrics';
+const CLASSNAME_UPCOMING_LYRICS = 'upcoming-lyrics';
 const CLASSNAME_INFOLINE = 'info-line-container';
 /** This attribute holds timestamp in mm:ss format for each div. */
 const ATTR_TIMESTAMP = 'timestamp';
@@ -117,8 +121,7 @@ const buttonListener = (e) => {
 /** Function that checks if the current playing track has lyrics provided by spotify. */
 function hasStockLyrics() {
     if (selectById(ID_BUTTON_LYRICS).getAttribute(ATTR_LYRICS_BUTTON_LYRICS_ACTIVE) == 'true') {
-        const stockLyricsContainer = document.querySelector(`.${SF_CLASSNAME_LYRICS_CONTAINER}`)
-        const lyrics = stockLyricsContainer.querySelectorAll(`div[${CSS_ID}="${ID_STOCK_LYRICS_LINE}"]`)
+        const lyrics = document.querySelectorAll(`div[${CSS_ID}="${ID_STOCK_LYRICS_LINE}"]`)
         return lyrics ? lyrics.length > 0 : false
     } else {
         if (DEBUG) console.log("lyrics window not opened")
@@ -165,11 +168,11 @@ function updateLyricsClassNames(playbackTime) {
             let lineTimeStamp = lyric.getAttribute(ATTR_TIMESTAMP);
             let cl = lyric.classList;
             if (lineTimeStamp <= playbackTime) {
-                cl.remove(CLASSNAME_INACTIVE_LYRICS);
+                cl.remove(CLASSNAME_UPCOMING_LYRICS);
                 cl.add(CLASSNAME_LYRICS_PASSED);
             } else {
                 cl.remove(CLASSNAME_LYRICS_PASSED);
-                cl.add(CLASSNAME_INACTIVE_LYRICS);
+                cl.add(CLASSNAME_UPCOMING_LYRICS);
             }
         });
         currentLyrics.classList.remove(CLASSNAME_LYRICS_PASSED); // prevent multiple classes
@@ -200,13 +203,13 @@ function changePlayBackPosition(timeStamp) {
 function hideSpotifyLyricsUi(mainContent) {
     if (DEBUG) console.log('hiding spotify original UI');
     //remove any previously set lyrics.
-    const oldLyrics = mainContent.querySelector(`.${CLASSNAME_LYRICS_CONTAINER}`);
-    if (oldLyrics) {
-        if (DEBUG) console.log('cleaning custom lyrics lyrics')
-        oldLyrics.remove();
+    const previousCustomLyrics = mainContent.querySelector(`.${CLASSNAME_CUSTOM_LYRICS_CONTAINER}`);
+    if (previousCustomLyrics) {
+        if (DEBUG) console.log('cleaning previous custom lyrics lyrics')
+        previousCustomLyrics.remove();
     }
-    // hiding all other children of mainContent. it shouldn't be removed, spotify need these for next track
-    if (mainContent.children.length != 0) {
+    // Hiding all other children of mainContent. it shouldn't be removed, Spotify need these for next track
+    if (mainContent.children.length > 0) {
         for (const item of mainContent.children) {
             // item.style.visibility = 'hidden';
             item.style.display = 'none';
@@ -223,22 +226,22 @@ function hideSpotifyLyricsUi(mainContent) {
                 attempts++;
                 hideSpotifyLyricsUi(mainContent);
             }
-        }, 100);
+        }, 500);
     }
 }
 
 /** Showing spotify lyrics UI, call this when custom lyrics are not available */
 function showSpotifyLyricsUi() {
     if (DEBUG) console.log('showing spotify original UI');
-    const mainContent = document.querySelector(`.${SF_CLASSNAME_LYRICS_CONTAINER}`);
+    const mainContent = document.querySelector(`.${SF_CLASSNAME_LYRICS_MAIN_CONTAINER}`);
     if (mainContent) {
-        const oldLyrics = mainContent.querySelector(`.${CLASSNAME_LYRICS_CONTAINER}`);
-        if (oldLyrics) {
-            if (DEBUG) console.log('removing previous lyrics');
-            oldLyrics.remove();
+        const oldCustomLyrics = mainContent.querySelector(`.${CLASSNAME_CUSTOM_LYRICS_CONTAINER}`);
+        if (oldCustomLyrics) {
+            if (DEBUG) console.log('removing previous custom lyrics');
+            oldCustomLyrics.remove();
         }
 
-        // hiding all other children of mainContent. it can't be removed, spotify need these for next track
+        // showing all other children of mainContent.
         for (const item of mainContent.children) {
             // item.style.visibility = 'visible';
             item.style.display = 'flex';
@@ -246,14 +249,14 @@ function showSpotifyLyricsUi() {
     }
 }
 
-/** Replace the existing lyrics ui with new lyrics content. */
+/** Replace the existing lyrics UI with new lyrics content. */
 function replaceLyrics(lyricDivs) {
     let retries = 3;
     if (DEBUG) console.log('replacing lyrics UI');
     const retryInterval = 1000; // 1 second interval between retries
 
     const tryReplaceLyrics = () => {
-        const mainContent = document.querySelector(`.${SF_CLASSNAME_LYRICS_CONTAINER}`);
+        const mainContent = document.querySelector(`.${SF_CLASSNAME_LYRICS_MAIN_CONTAINER}`);
         if (mainContent) {
             hideSpotifyLyricsUi(mainContent);
             mainContent.appendChild(lyricDivs);
@@ -296,6 +299,7 @@ async function pullTrackInfo() {
     } else {
         if (hasStockLyrics()) {
             if (DEBUG) console.log("Lyrics are available, won't be replaced");
+            //TODO: wait and retry from here
             return;
         } else {
             if (DEBUG) console.log("Lyrics not available, trying to add custom lyrics");
@@ -373,7 +377,7 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
         if (changes.removeBackground != undefined) {
             const bgColor = changes.removeBackground.newValue == true ? 'transparent' : 'var(--lyrics-color-background)';
             if (DEBUG) console.log('changing background to:', bgColor);
-            document.querySelector(`.${CLASSNAME_LYRICS_CONTAINER}`).style.backgroundColor = bgColor;
+            document.querySelector(`.${CLASSNAME_CUSTOM_LYRICS_CONTAINER}`).style.backgroundColor = bgColor;
         }
         if (changes.overrideSpotifyLyrics != undefined) {
             overrideSpotifyLyrics = changes.overrideSpotifyLyrics.newValue;
@@ -416,17 +420,18 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
 });
 
 /** applying styles for the custom lyrics UI. */
-function applyStyling(overrideStockTheme, bgColor, lyricsAlignment, lyricsFont, allLyricsStyle, passedLStyles, activeLStyles, inactiveLStyles) {
+function applyStyling(overrideStockTheme, bgColor, lyricsAlignment, lyricsFont, allLyricsStyle, passedLStyles, activeLStyles, upcomingLStyles) {
     const style = document.createElement('style');
     style.id = CUSTOM_STYLE_ELEMENT_ID;
     style.textContent = `
         :root{
             --lyrics-font: ${lyricsFont};
         }
-        .${CLASSNAME_LYRICS_CONTAINER} ${overrideStockTheme ? ', .' + SF_CLASSNAME_LYRICS_SUB_CONTAINER : ''} {
+        .${CLASSNAME_CUSTOM_LYRICS_CONTAINER} ${overrideStockTheme ? `, .${SF_CLASSNAME_LYRICS_MAIN_CONTAINER}` : ''} {
             text-align: ${lyricsAlignment};
-            ${overrideStockTheme ? '' : 'padding: 64px'};
+            ${overrideStockTheme ? '' : 'padding: 64px;'}
             display: flex;
+            height: fit-content;
             flex-direction: column;
             justify-content: center;
             align-items: ${lyricsAlignment};
@@ -434,16 +439,16 @@ function applyStyling(overrideStockTheme, bgColor, lyricsAlignment, lyricsFont, 
             font-family: var(--lyrics-font);
             background-color: ${bgColor};
         }
-        .${CLASSNAME_LYRICS_ADDED} ${overrideStockTheme ? ', .' + SF_CLASSNAME_LYRICS_LINE : ''}{
+        .${CLASSNAME_LYRICS_ADDED} ${overrideStockTheme ? `, .${SF_CLASSNAME_LYRICS_LINE}` : ''}{
            ${allLyricsStyle}
         }
-        .${CLASSNAME_LYRICS_PASSED} ${overrideStockTheme ? ', .' + SF_CLASSNAME_LYRICS_PASSED : ''}{
+        .${CLASSNAME_LYRICS_PASSED} ${overrideStockTheme ? `, .${SF_CLASSNAME_LYRICS_PASSED}` : ''}{
             ${passedLStyles}
         }
-        .${CLASSNAME_INACTIVE_LYRICS}{
-            ${inactiveLStyles}
+        .${CLASSNAME_UPCOMING_LYRICS}{
+            ${upcomingLStyles}
         }
-        .${CLASSNAME_ACTIVE_LYRICS}{
+        .${CLASSNAME_ACTIVE_LYRICS} ${overrideStockTheme ? `, .${SF_CLASSNAME_LYRICS_UPCOMING}` : ''}{
             ${activeLStyles}
         }
         .${CLASSNAME_INFOLINE} p{
@@ -467,7 +472,7 @@ function refreshTheme() {
         const lyricsFont = results.lyricsFont != undefined ? results.lyricsFont : 'Arial sans';
         const overrideStockTheme = results.overrideStockTheme != undefined ? results.overrideStockTheme : false;
         const bgColor = results.removeBackground == true ? 'transparent' : 'var(--lyrics-color-background)';
-        overrideSpotifyLyrics = results.overrideSpotifyLyrics != undefined ? results.overrideSpotifyLyrics : false;
+        const overrideSpotifyLyrics = results.overrideSpotifyLyrics != undefined ? results.overrideSpotifyLyrics : false;
         if (DEBUG) console.log('Configs:', 'font', lyricsFont, '| color', bgColor, '| alignment', lyricsAlignment, '| overrideSpotifyLyrics', overrideSpotifyLyrics);
         if (results.enableCustomStyles == true) {
             if (DEBUG) console.log('allLyricsStyle', results.allLyricsStyle, 'enableCustomStyles', results.enableCustomStyles, 'passedLyricsStyles', results.passedLyricsStyles, 'activeLyricsStyles', results.activeLyricsStyles, 'inactiveLyricsStyles', results.inactiveLyricsStyles);
@@ -475,13 +480,13 @@ function refreshTheme() {
             const allLyricsStyle = results.allLyricsStyle != undefined ? results.allLyricsStyle : allLyricsDefaultStyle;
             const passedLStyles = results.passedLyricsStyles != undefined ? results.passedLyricsStyles : passedLDefaultStyles;
             const activeLStyles = results.activeLyricsStyles != undefined ? results.activeLyricsStyles : activeLDefaultStyles;
-            const inactiveLStyles = results.inactiveLyricsStyles != undefined ? results.inactiveLyricsStyles : inactiveLDefaultStyles;
+            const upcomingLStyles = results.upcomingLyricsStyles != undefined ? results.upcomingLyricsStyles : upcomingLDefaultStyles;
             if (currentStyle != undefined) { currentStyle.remove(); }
-            applyStyling(overrideStockTheme, bgColor, lyricsAlignment, lyricsFont, allLyricsStyle, passedLStyles, activeLStyles, inactiveLStyles);
+            applyStyling(overrideStockTheme, bgColor, lyricsAlignment, lyricsFont, allLyricsStyle, passedLStyles, activeLStyles, upcomingLStyles);
         } else {
             if (DEBUG) console.log('removing custom styles');
             if (currentStyle != undefined) { currentStyle.remove(); }
-            applyStyling(overrideStockTheme, bgColor, lyricsAlignment, lyricsFont, allLyricsDefaultStyle, passedLDefaultStyles, activeLDefaultStyles, inactiveLDefaultStyles);
+            applyStyling(overrideStockTheme, bgColor, lyricsAlignment, lyricsFont, allLyricsDefaultStyle, passedLDefaultStyles, activeLDefaultStyles, upcomingLDefaultStyles);
         }
     });
 }

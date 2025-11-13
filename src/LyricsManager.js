@@ -70,7 +70,7 @@ class LyricsManager {
     #lrcToDivs(lrcContent) {
         const lines = lrcContent.trim().split('\n');
         const lyricDiv = document.createElement('div');
-        lyricDiv.className = CLASSNAME_LYRICS_CONTAINER;
+        lyricDiv.className = CLASSNAME_CUSTOM_LYRICS_CONTAINER;
         lines.forEach((line, index) => {
             let matches = line.match(/\[(\d+:\d+\.\d+)\](.*)/);
             let lineDiv = document.createElement('div');
@@ -79,7 +79,7 @@ class LyricsManager {
                 // handling lrc lyrics
                 let timestamp = matches[1].split(".")[0];
                 let lyrics = matches[2].trim();
-                lineDiv.classList.add(CLASSNAME_INACTIVE_LYRICS);
+                lineDiv.classList.add(CLASSNAME_UPCOMING_LYRICS);
                 lineDiv.setAttribute(ATTR_TIMESTAMP, timestamp);
                 lineDiv.innerHTML = (lyrics == "") ? this.#emptyLine : lyrics;
                 (function (ts) {
@@ -95,7 +95,7 @@ class LyricsManager {
                 }
             } else {
                 // process plain lyrics
-                lineDiv.classList.add(ATTR_BUTTON_LYRICS_ACTIVE);
+                lineDiv.classList.add(CLASSNAME_ACTIVE_LYRICS);
                 lineDiv.innerHTML = (line == "") ? this.#emptyLine : line.trim();
             }
             lyricDiv.appendChild(lineDiv);

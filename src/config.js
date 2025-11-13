@@ -4,19 +4,19 @@ function showCustomStyleConfigs(enabled) {
     const elStylesMainContainer = document.getElementById('allLyricsStyle');
     const elStylesPassed = document.getElementById('passedLyricsStyles');
     const elStylesActive = document.getElementById('activeLyricsStyles');
-    const elStylesInactive = document.getElementById('inactiveLyricsStyles');
+    const elStylesUpcoming = document.getElementById('upcomingLyricsStyles');
     document.querySelectorAll('.custom-styles').forEach(element => {
         element.style.display = enabled ? 'flex' : 'none';
     });
     if (enabled) {
-        chrome.storage.sync.get(['mainContainerStyles', 'allLyricsStyle', 'passedLyricsStyles', 'activeLyricsStyles', 'inactiveLyricsStyles'], function (result) {
+        chrome.storage.sync.get(['mainContainerStyles', 'allLyricsStyle', 'passedLyricsStyles', 'activeLyricsStyles', 'upcomingLyricsStyles'], function (result) {
             elStylesMainContainer.value = result.allLyricsStyle != undefined ? result.allLyricsStyle : allLyricsDefaultStyle;
             elStylesPassed.value = result.passedLyricsStyles != undefined ? result.passedLyricsStyles : passedLDefaultStyles;
             elStylesActive.value = result.activeLyricsStyles != undefined ? result.activeLyricsStyles : activeLDefaultStyles;
-            elStylesInactive.value = result.inactiveLyricsStyles != undefined ? result.inactiveLyricsStyles : inactiveLDefaultStyles;
+            elStylesUpcoming.value = result.upcomingLyricsStyles != undefined ? result.upcomingLyricsStyles : upcomingLDefaultStyles;
         });
 
-        [elStylesMainContainer, elStylesPassed, elStylesActive, elStylesInactive].forEach((el) => {
+        [elStylesMainContainer, elStylesPassed, elStylesActive, elStylesUpcoming].forEach((el) => {
             el.addEventListener('input', function () {
                 chrome.storage.sync.set({ [el.id]: el.value });
             });
